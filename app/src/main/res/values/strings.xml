@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">permissiondemo</string>
+    <string name="photos_screen_name">Photos</string>
+    <string name="add_media">Add Media</string>
+</resources>
