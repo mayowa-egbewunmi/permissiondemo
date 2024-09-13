@@ -18,8 +18,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.mayowa.permissiondemo.ui.screens.photos.PhotoCaptureScreen
-import com.mayowa.permissiondemo.ui.screens.photos.MediaScreen
+import com.mayowa.permissiondemo.ui.screens.MediaScreen
+import com.mayowa.permissiondemo.ui.screens.PhotoCaptureScreen
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KType
 
