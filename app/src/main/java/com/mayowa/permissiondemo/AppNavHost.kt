@@ -10,6 +10,7 @@ import androidx.compose.animation.core.EaseOut
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDeepLink
 import androidx.navigation.NavGraphBuilder
@@ -19,7 +20,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mayowa.permissiondemo.ui.screens.MediaScreen
-import com.mayowa.permissiondemo.ui.screens.PhotoCaptureScreen
+import com.mayowa.permissiondemo.ui.screens.photo.PhotoCaptureScreen
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KType
 
@@ -47,7 +48,7 @@ fun AppNavHost(
             )
         }
         composable<PhotoCaptureDestination> {
-            PhotoCaptureScreen(navController)
+            PhotoCaptureScreen(navController, viewModel = hiltViewModel())
         }
     }
 }
