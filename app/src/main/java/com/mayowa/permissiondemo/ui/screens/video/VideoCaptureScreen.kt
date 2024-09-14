@@ -1,6 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
-package com.mayowa.permissiondemo.ui.screens
+package com.mayowa.permissiondemo.ui.screens.video
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,9 +12,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavController
 import com.mayowa.permissiondemo.AppScaffold
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhotoCaptureScreen(
+fun VideoCaptureScreen(
     navController: NavController
 ) {
     AppScaffold(
@@ -34,7 +33,7 @@ fun PhotoCaptureScreen(
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
-                text = "Photo Capture Screen"
+                text = "Video Capture Screen"
             )
         }
     }
