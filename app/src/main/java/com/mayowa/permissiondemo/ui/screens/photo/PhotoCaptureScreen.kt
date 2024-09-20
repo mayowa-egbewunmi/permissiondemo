@@ -2,7 +2,10 @@
 
 package com.mayowa.permissiondemo.ui.screens.photo
 
+import android.Manifest
 import android.util.Size
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector.LensFacing
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCapture.FlashMode
@@ -37,6 +40,7 @@ import com.mayowa.permissiondemo.ui.composables.CameraCaptureIcon
 import com.mayowa.permissiondemo.ui.composables.CameraCloseIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
+import com.mayowa.permissiondemo.ui.composables.CameraPermissionRationaleDialog
 
 @Composable
 fun PhotoCaptureScreen(
@@ -51,15 +55,15 @@ fun PhotoCaptureScreen(
     val listener = remember(viewModel) {
         object : PhotoCaptureManager.PhotoListener {
             override fun onInitialised(cameraLensInfo: HashMap<Int, CameraLensFeatures>) {
-                // TODO: CameraInitialized to viewModel
+                viewModel.onEvent(PhotoCaptureViewModel.Event.CameraInitialized(cameraLensInfo))
             }
 
             override fun onSuccess(imageResult: PhotoResult) {
-                // TODO: ImageCaptured to viewModel
+                viewModel.onEvent(PhotoCaptureViewModel.Event.ImageCaptured(imageResult))
             }
 
             override fun onError(exception: Exception) {
-                // TODO: onError to viewModel
+                // TODO: pop up error snackbar
             }
         }
     }
@@ -72,6 +76,7 @@ fun PhotoCaptureScreen(
     }
 
     LaunchedEffect(viewModel) {
+        viewModel.onEvent(PhotoCaptureViewModel.Event.Init)
         viewModel.effect.collect { effect ->
             when (effect) {
                 is PhotoCaptureViewModel.Effect.CaptureImage -> captureManager.takePhoto(effect.path)
@@ -80,13 +85,15 @@ fun PhotoCaptureScreen(
         }
     }
 
-    AppScaffold(topBar = {}) {
+    AppScaffold(topBar = {}) { innerPadding ->
         PhotoCapturePreview(
+            modifier = Modifier.padding(innerPadding),
             flashSupported = state.flashSupported(),
             flashMode = state.flashMode,
             flipSupported = state.flipSupported(),
             cameraLens = state.cameraLens,
             captureManager = captureManager,
+            isPermissionGranted = state.cameraPermissionGranted,
             onEvent = viewModel::onEvent,
         )
     }
@@ -94,6 +101,8 @@ fun PhotoCaptureScreen(
 
 @Composable
 private fun PhotoCapturePreview(
+    modifier: Modifier,
+    isPermissionGranted: Boolean,
     flashSupported: Boolean,
     @FlashMode flashMode: Int,
     flipSupported: Boolean,
@@ -101,14 +110,31 @@ private fun PhotoCapturePreview(
     captureManager: PhotoCaptureManager,
     onEvent: (PhotoCaptureViewModel.Event) -> Unit,
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    // Permission launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        onEvent(PhotoCaptureViewModel.Event.UpdatePermissionState(isGranted))
+    }
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .then(modifier)) {
         cameraLens?.let {
-            PhotoCameraPreview(
-                modifier = Modifier.fillMaxSize(),
-                captureManager = captureManager,
-                lens = it,
-                flashMode = flashMode
-            )
+            if (isPermissionGranted) {
+                PhotoCameraPreview(
+                    modifier = Modifier.fillMaxSize(),
+                    captureManager = captureManager,
+                    lens = it,
+                    flashMode = flashMode
+                )
+            } else {
+                CameraPermissionRationaleDialog(
+                    onRequestPermission = {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                )
+            }
         }
         CaptureHeader(
             modifier = Modifier
@@ -116,14 +142,14 @@ private fun PhotoCapturePreview(
                 .align(Alignment.TopStart),
             flashSupported = flashSupported,
             flashMode = flashMode,
-            onFlashTapped = { /* TODO */ },
-            onCloseTapped = { /* TODO */ }
+            onFlashTapped = { onEvent(PhotoCaptureViewModel.Event.FlashTapped) },
+            onCloseTapped = { onEvent(PhotoCaptureViewModel.Event.CloseTapped) }
         )
         cameraLens?.let {
             CaptureFooter(
                 flipSupported = flipSupported,
                 onCaptureTapped = { /* TODO */ },
-                onFlipTapped = { /* TODO */ },
+                onFlipTapped = { onEvent(PhotoCaptureViewModel.Event.FlipCameraLensTapped) },
                 modifier = Modifier.align(Alignment.BottomStart)
             )
         }
@@ -159,7 +185,7 @@ private fun CaptureHeader(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(16.dp)
+            .padding(top = 16.dp, end = 16.dp)
             .then(modifier)
     ) {
         if (flashSupported) {

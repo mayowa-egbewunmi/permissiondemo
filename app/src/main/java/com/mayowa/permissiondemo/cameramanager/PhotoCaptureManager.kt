@@ -36,7 +36,6 @@ class PhotoCaptureManager private constructor(
     private val context: Context,
     private val lifecycleOwner: LifecycleOwner,
     private val listener: PhotoListener,
-    private val preferredLens: Int?,
 ) : DefaultLifecycleObserver {
 
     private var previewWidthInPixel: Int? = null
@@ -220,7 +219,6 @@ class PhotoCaptureManager private constructor(
 
     class Builder(private val context: Context) {
         private var lifecycleOwner: LifecycleOwner? = null
-        private var preferredLens: Int? = null
         private var listener: PhotoListener? = null
 
         fun setLifecycleOwner(lifecycleOwner: LifecycleOwner) = apply {
@@ -231,13 +229,9 @@ class PhotoCaptureManager private constructor(
             this.listener = listener
         }
 
-        fun setPreferredLens(lens: Int?) = apply {
-            this.preferredLens = lens
-        }
-
         fun build(): PhotoCaptureManager {
             requireNotNull(lifecycleOwner) { "Lifecycle owner is not set" }
-            return PhotoCaptureManager(context, lifecycleOwner!!, listener!!, preferredLens)
+            return PhotoCaptureManager(context, lifecycleOwner!!, listener!!)
         }
     }
 
