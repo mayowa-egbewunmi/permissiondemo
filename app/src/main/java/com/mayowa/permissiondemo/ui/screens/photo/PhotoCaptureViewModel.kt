@@ -1,7 +1,11 @@
 package com.mayowa.permissiondemo.ui.screens.photo
 
+import android.Manifest
+import android.app.Application
+import android.content.pm.PackageManager
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
@@ -22,6 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PhotoCaptureViewModel @Inject constructor(
+    private val application: Application,
     private val mediaStorageUtil: MediaStorageUtil,
     @ioDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -42,8 +47,19 @@ class PhotoCaptureViewModel @Inject constructor(
             Event.BackTapped -> onBackTapped()
             Event.SubmitTapped -> onSubmitTapped()
             is Event.ImageCaptured -> onImageCaptured(event.imageResult)
-            is Event.CameraInitialized -> onCameraInitialized(event.cameraLensInfo, event.preferredLens)
+            is Event.CameraInitialized -> onCameraInitialized(event.cameraLensInfo)
+            is Event.UpdatePermissionState -> onUpdatePermissionState(event.isGranted)
+            is Event.Init -> onInit()
         }
+    }
+
+    private fun onInit() {
+        val isGranted = ContextCompat.checkSelfPermission(
+            application,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        _state.update { it.copy(cameraPermissionGranted = isGranted) }
     }
 
     private fun onRetakeTapped() {
@@ -78,8 +94,8 @@ class PhotoCaptureViewModel @Inject constructor(
         _state.update { it.copy(cameraState = CameraState.PHOTO_CAPTURED, filePath = imageResult.path) }
     }
 
-    private fun onCameraInitialized(lensInfo: Map<Int, CameraLensFeatures>, preferredLens: Int?) {
-        val lens = getDefaultLens(lensInfo, preferredLens)
+    private fun onCameraInitialized(lensInfo: Map<Int, CameraLensFeatures>) {
+        val lens = getDefaultLens(lensInfo)
         _state.update { it.copy(cameraLensInfo = lensInfo, cameraLens = lens) }
     }
 
@@ -122,12 +138,11 @@ class PhotoCaptureViewModel @Inject constructor(
         }
     }
 
-    private fun getDefaultLens(lensInfo: Map<Int, CameraLensFeatures>, preferredLens: Int?): Int? {
+    private fun getDefaultLens(lensInfo: Map<Int, CameraLensFeatures>): Int? {
         val hasFrontLens = lensInfo[CameraSelector.LENS_FACING_FRONT] != null
         val hasBackLens = lensInfo[CameraSelector.LENS_FACING_BACK] != null
 
         return when {
-            preferredLens != null && lensInfo[preferredLens] != null -> preferredLens
             hasBackLens -> CameraSelector.LENS_FACING_BACK
             hasFrontLens -> CameraSelector.LENS_FACING_FRONT
             else -> null
@@ -142,7 +157,12 @@ class PhotoCaptureViewModel @Inject constructor(
         }
     }
 
+    private fun onUpdatePermissionState(isGranted: Boolean) {
+        _state.update { it.copy(cameraPermissionGranted = isGranted) }
+    }
+
     data class State(
+        val cameraPermissionGranted: Boolean = false,
         val cameraState: CameraState = CameraState.PHOTO_PREVIEW,
         val filePath: String? = null,
         val cameraLensInfo: Map<Int, CameraLensFeatures> = mapOf(),
@@ -162,11 +182,13 @@ class PhotoCaptureViewModel @Inject constructor(
         data object RetakeTapped : Event()
         data object FlashTapped : Event()
         data object BackTapped : Event()
+        data object Init : Event()
 
         data object SubmitTapped : Event()
         data class ImageCaptured(val imageResult: PhotoResult) : Event()
-        data class CameraInitialized(val cameraLensInfo: Map<Int, CameraLensFeatures>, val preferredLens: Int?) : Event()
+        data class CameraInitialized(val cameraLensInfo: Map<Int, CameraLensFeatures>) : Event()
         data object FlipCameraLensTapped : Event()
+        data class UpdatePermissionState(val isGranted: Boolean) : Event()
     }
 
     sealed class Effect {

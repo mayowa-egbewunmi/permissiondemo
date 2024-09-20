@@ -1,16 +1,18 @@
 package com.mayowa.permissiondemo.ui.composables
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.mayowa.permissiondemo.R
 
 @Composable
 fun CameraCaptureIcon(modifier: Modifier = Modifier, onTapped: () -> Unit) {
     IconButton(
-        modifier = Modifier.then(modifier),
+        modifier = Modifier.size(58.dp).then(modifier),
         onClick = { onTapped() },
         content = {
             Image(
