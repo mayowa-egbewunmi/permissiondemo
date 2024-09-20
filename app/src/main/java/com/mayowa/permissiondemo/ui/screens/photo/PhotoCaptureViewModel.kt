@@ -45,6 +45,7 @@ class PhotoCaptureViewModel @Inject constructor(
             Event.FlashTapped -> onFlashTapped()
             Event.RetakeTapped -> onRetakeTapped()
             Event.BackTapped -> onBackTapped()
+            Event.ClosePermissionDialogButtonTapped -> onClosePermissionDialogButtonTapped()
             Event.SubmitTapped -> onSubmitTapped()
             is Event.ImageCaptured -> onImageCaptured(event.imageResult)
             is Event.CameraInitialized -> onCameraInitialized(event.cameraLensInfo)
@@ -58,7 +59,6 @@ class PhotoCaptureViewModel @Inject constructor(
             application,
             Manifest.permission.CAMERA
         ) == PackageManager.PERMISSION_GRANTED
-
         _state.update { it.copy(cameraPermissionGranted = isGranted) }
     }
 
@@ -100,6 +100,11 @@ class PhotoCaptureViewModel @Inject constructor(
     }
 
     private fun onCloseTapped() {
+        emitEffect(Effect.CloseScreen())
+    }
+
+
+    private fun onClosePermissionDialogButtonTapped() {
         emitEffect(Effect.CloseScreen())
     }
 
@@ -183,6 +188,7 @@ class PhotoCaptureViewModel @Inject constructor(
         data object FlashTapped : Event()
         data object BackTapped : Event()
         data object Init : Event()
+        data object ClosePermissionDialogButtonTapped : Event()
 
         data object SubmitTapped : Event()
         data class ImageCaptured(val imageResult: PhotoResult) : Event()

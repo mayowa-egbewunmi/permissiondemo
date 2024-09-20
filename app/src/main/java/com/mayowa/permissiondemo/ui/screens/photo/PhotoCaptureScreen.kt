@@ -3,6 +3,9 @@
 package com.mayowa.permissiondemo.ui.screens.photo
 
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +22,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -41,7 +48,10 @@ import com.mayowa.permissiondemo.ui.composables.CameraCloseIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
 import com.mayowa.permissiondemo.ui.composables.CameraPermissionRationaleDialog
+import com.mayowa.permissiondemo.ui.composables.CameraPermissionSettingsDialog
+import com.mayowa.permissiondemo.utils.getActivity
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhotoCaptureScreen(
     navigationController: NavController,
@@ -76,12 +86,23 @@ fun PhotoCaptureScreen(
     }
 
     LaunchedEffect(viewModel) {
-        viewModel.onEvent(PhotoCaptureViewModel.Event.Init)
         viewModel.effect.collect { effect ->
             when (effect) {
                 is PhotoCaptureViewModel.Effect.CaptureImage -> captureManager.takePhoto(effect.path)
                 is PhotoCaptureViewModel.Effect.CloseScreen -> navigationController.navigateUp()
             }
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_START) {
+                viewModel.onEvent(PhotoCaptureViewModel.Event.Init)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
 
@@ -110,6 +131,7 @@ private fun PhotoCapturePreview(
     captureManager: PhotoCaptureManager,
     onEvent: (PhotoCaptureViewModel.Event) -> Unit,
 ) {
+    val context = LocalContext.current.getActivity()
     // Permission launcher
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -117,9 +139,11 @@ private fun PhotoCapturePreview(
         onEvent(PhotoCaptureViewModel.Event.UpdatePermissionState(isGranted))
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .then(modifier)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(modifier)
+    ) {
         cameraLens?.let {
             if (isPermissionGranted) {
                 PhotoCameraPreview(
@@ -128,9 +152,20 @@ private fun PhotoCapturePreview(
                     lens = it,
                     flashMode = flashMode
                 )
-            } else {
+            } else if (ActivityCompat.shouldShowRequestPermissionRationale(context, Manifest.permission.CAMERA)) {
                 CameraPermissionRationaleDialog(
+                    onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
                     onRequestPermission = {
+                        permissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                )
+            } else {
+                CameraPermissionSettingsDialog(
+                    onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
+                    onSettingsTapped = {
+                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                        intent.data = Uri.fromParts("package", context.packageName, null)
+                        context.startActivity(intent)
                         permissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 )
