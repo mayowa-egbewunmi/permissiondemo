@@ -205,6 +205,12 @@ class PhotoCaptureViewModel @Inject constructor(
     private fun emitEffect(effect: Effect) = viewModelScope.launch {
         _effect.emit(effect)
     }
+
+    companion object {
+        val requiredPermissions = listOf(
+            Manifest.permission.CAMERA
+        )
+    }
 }
 
 fun PhotoCaptureViewModel.State.flashSupported(): Boolean {

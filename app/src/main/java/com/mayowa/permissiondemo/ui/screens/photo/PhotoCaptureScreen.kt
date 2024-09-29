@@ -2,7 +2,6 @@
 
 package com.mayowa.permissiondemo.ui.screens.photo
 
-import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
@@ -32,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -47,8 +45,9 @@ import com.mayowa.permissiondemo.ui.composables.CameraCaptureIcon
 import com.mayowa.permissiondemo.ui.composables.CameraCloseIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
-import com.mayowa.permissiondemo.ui.composables.CameraPermissionRationaleDialog
 import com.mayowa.permissiondemo.ui.composables.CameraPermissionSettingsDialog
+import com.mayowa.permissiondemo.ui.composables.PermissionRationaleDialog
+import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,7 +113,6 @@ fun PhotoCaptureScreen(
             flipSupported = state.flipSupported(),
             cameraLens = state.cameraLens,
             captureManager = captureManager,
-            isPermissionGranted = state.cameraPermissionGranted,
             onEvent = viewModel::onEvent,
         )
     }
@@ -123,7 +121,6 @@ fun PhotoCaptureScreen(
 @Composable
 private fun PhotoCapturePreview(
     modifier: Modifier,
-    isPermissionGranted: Boolean,
     flashSupported: Boolean,
     @FlashMode flashMode: Int,
     flipSupported: Boolean,
@@ -132,12 +129,7 @@ private fun PhotoCapturePreview(
     onEvent: (PhotoCaptureViewModel.Event) -> Unit,
 ) {
     val context = LocalContext.current.getActivity()
-    // Permission launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        onEvent(PhotoCaptureViewModel.Event.UpdatePermissionState(isGranted))
-    }
+    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {}
 
     Box(
         modifier = Modifier
@@ -145,30 +137,38 @@ private fun PhotoCapturePreview(
             .then(modifier)
     ) {
         cameraLens?.let {
-            if (isPermissionGranted) {
-                PhotoCameraPreview(
-                    modifier = Modifier.fillMaxSize(),
-                    captureManager = captureManager,
-                    lens = it,
-                    flashMode = flashMode
-                )
-            } else if (ActivityCompat.shouldShowRequestPermissionRationale(context, Manifest.permission.CAMERA)) {
-                CameraPermissionRationaleDialog(
-                    onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
-                    onRequestPermission = {
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
-            } else {
-                CameraPermissionSettingsDialog(
-                    onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
-                    onSettingsTapped = {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        intent.data = Uri.fromParts("package", context.packageName, null)
-                        context.startActivity(intent)
-                        permissionLauncher.launch(Manifest.permission.CAMERA)
-                    }
-                )
+            val permissions = PermissionUtil.requiredPermissions(context, PhotoCaptureViewModel.requiredPermissions)
+            when {
+                permissions.isEmpty() -> {
+                    PhotoCameraPreview(
+                        modifier = Modifier.fillMaxSize(),
+                        captureManager = captureManager,
+                        lens = it,
+                        flashMode = flashMode
+                    )
+                }
+
+                PermissionUtil.shouldShowRequestPermissionRationale(context, permissions) -> {
+                    PermissionRationaleDialog(
+                        requiredPermissions = permissions,
+                        onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
+                        onRequestPermission = {
+                            permissionLauncher.launch(permissions.toTypedArray())
+                        }
+                    )
+                }
+
+                else -> {
+                    CameraPermissionSettingsDialog(
+                        requiredPermissions = permissions,
+                        onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
+                        onSettingsTapped = {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = Uri.fromParts("package", context.packageName, null)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             }
         }
         CaptureHeader(
