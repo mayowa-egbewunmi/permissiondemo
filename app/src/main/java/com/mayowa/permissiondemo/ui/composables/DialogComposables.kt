@@ -4,16 +4,27 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
+import com.mayowa.permissiondemo.R
+import com.mayowa.permissiondemo.models.PERMISSION_RATIONALE
 
 @Composable
-fun CameraPermissionRationaleDialog(onRequestPermission: () -> Unit, onClose: () -> Unit) {
+fun PermissionRationaleDialog(
+    requiredPermissions: List<String>,
+    onRequestPermission: () -> Unit, onClose: () -> Unit,
+) {
+    val rationaleText = remember(requiredPermissions) {
+        requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
+    }
+
     AlertDialog(
         onDismissRequest = { /* Do nothing */ },
-        title = { Text(text = "Camera Permission Required") },
-        text = { Text(text = "We need access to your camera to capture photos.") },
+        title = { Text(text = stringResource(id = R.string.permissions_required)) },
+        text = { Text(text = rationaleText) },
         confirmButton = {
             Button(onClick = onRequestPermission) {
-                Text("Grant Permission")
+                Text("Continue")
             }
         },
         dismissButton = {
@@ -25,11 +36,18 @@ fun CameraPermissionRationaleDialog(onRequestPermission: () -> Unit, onClose: ()
 }
 
 @Composable
-fun CameraPermissionSettingsDialog(onSettingsTapped: () -> Unit, onClose: () -> Unit) {
+fun CameraPermissionSettingsDialog(
+    requiredPermissions: List<String>,
+    onSettingsTapped: () -> Unit, onClose: () -> Unit,
+) {
+    val rationaleText = remember(requiredPermissions) {
+        requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
+    }
+
     AlertDialog(
         onDismissRequest = { /* Do nothing */ },
-        title = { Text(text = "Camera Permission Required") },
-        text = { Text(text = "We need access to your camera to capture photos. Please enable camera access in your device settings.") },
+        title = { Text(text = stringResource(id = R.string.permissions_required)) },
+        text = { Text(text = rationaleText) },
         confirmButton = {
             Button(onClick = onSettingsTapped) {
                 Text("Launch Settings")
