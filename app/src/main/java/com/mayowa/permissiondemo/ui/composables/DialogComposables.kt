@@ -11,8 +11,9 @@ import com.mayowa.permissiondemo.models.PERMISSION_RATIONALE
 
 @Composable
 fun PermissionRationaleDialog(
-    requiredPermissions: List<String>,
-    onRequestPermission: () -> Unit, onClose: () -> Unit,
+    requiredPermissions: Set<String>,
+    onRequestPermission: () -> Unit,
+    onClose: () -> Unit,
 ) {
     val rationaleText = remember(requiredPermissions) {
         requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
@@ -24,12 +25,12 @@ fun PermissionRationaleDialog(
         text = { Text(text = rationaleText) },
         confirmButton = {
             Button(onClick = onRequestPermission) {
-                Text("Continue")
+                Text(stringResource(R.string._continue))
             }
         },
         dismissButton = {
             Button(onClick = onClose) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         }
     )
@@ -37,7 +38,7 @@ fun PermissionRationaleDialog(
 
 @Composable
 fun CameraPermissionSettingsDialog(
-    requiredPermissions: List<String>,
+    requiredPermissions: Set<String>,
     onSettingsTapped: () -> Unit, onClose: () -> Unit,
 ) {
     val rationaleText = remember(requiredPermissions) {

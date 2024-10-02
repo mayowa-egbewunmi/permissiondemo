@@ -1,18 +1,19 @@
 package com.mayowa.permissiondemo.ui.screens.photo
 
 import android.Manifest
-import android.app.Application
-import android.content.pm.PackageManager
+import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
 import com.mayowa.permissiondemo.cameramanager.PhotoResult
 import com.mayowa.permissiondemo.di.ioDispatcher
 import com.mayowa.permissiondemo.utils.MediaStorageUtil
+import com.mayowa.permissiondemo.utils.PrefKey
+import com.mayowa.permissiondemo.utils.SharedPreferenceUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +27,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PhotoCaptureViewModel @Inject constructor(
-    private val application: Application,
+    @ApplicationContext private val context: Context,
     private val mediaStorageUtil: MediaStorageUtil,
+    private val sharedPreferenceUtil: SharedPreferenceUtil,
     @ioDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -49,17 +51,58 @@ class PhotoCaptureViewModel @Inject constructor(
             Event.SubmitTapped -> onSubmitTapped()
             is Event.ImageCaptured -> onImageCaptured(event.imageResult)
             is Event.CameraInitialized -> onCameraInitialized(event.cameraLensInfo)
-            is Event.UpdatePermissionState -> onUpdatePermissionState(event.isGranted)
-            is Event.Init -> onInit()
+            is Event.PermissionRequirementUpdated -> onPermissionRequirementUpdated(event.unGrantedPermissions, event.isRationaleRequired)
+            is Event.OnScreenLaunch -> onScreenLaunch(event.unGrantedPermissions, event.isRationaleRequired)
         }
     }
 
-    private fun onInit() {
-        val isGranted = ContextCompat.checkSelfPermission(
-            application,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED
-        _state.update { it.copy(cameraPermissionGranted = isGranted) }
+    private fun onScreenLaunch(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+        updatePermissionState(unGrantedPermissions, isRationaleRequired)
+    }
+
+    private fun onPermissionRequirementUpdated(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions)
+        updatePermissionState(unGrantedPermissions, isRationaleRequired)
+    }
+
+    private fun updatePermissionState(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+        when {
+            unGrantedPermissions.isEmpty() -> {
+                _state.update {
+                    it.copy(
+                        ungrantedPermissions = unGrantedPermissions,
+                        permissionState = PermissionState.NoAction
+                    )
+                }
+            }
+
+            isRationaleRequired -> {
+                _state.update {
+                    it.copy(
+                        ungrantedPermissions = unGrantedPermissions,
+                        permissionState = PermissionState.ShowRationale
+                    )
+                }
+            }
+
+            sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions.toSet()) -> {
+                _state.update {
+                    it.copy(
+                        ungrantedPermissions = unGrantedPermissions,
+                        permissionState = PermissionState.LaunchSettings
+                    )
+                }
+            }
+
+            else -> {
+                _state.update {
+                    it.copy(
+                        ungrantedPermissions = unGrantedPermissions,
+                        permissionState = PermissionState.RequestPermission
+                    )
+                }
+            }
+        }
     }
 
     private fun onRetakeTapped() {
@@ -162,13 +205,11 @@ class PhotoCaptureViewModel @Inject constructor(
         }
     }
 
-    private fun onUpdatePermissionState(isGranted: Boolean) {
-        _state.update { it.copy(cameraPermissionGranted = isGranted) }
-    }
-
     data class State(
         val cameraPermissionGranted: Boolean = false,
         val cameraState: CameraState = CameraState.PHOTO_PREVIEW,
+        val permissionState: PermissionState? = null,
+        val ungrantedPermissions: Set<String> = emptySet(),
         val filePath: String? = null,
         val cameraLensInfo: Map<Int, CameraLensFeatures> = mapOf(),
         @CameraSelector.LensFacing val cameraLens: Int? = null,
@@ -181,20 +222,27 @@ class PhotoCaptureViewModel @Inject constructor(
         PHOTO_CAPTURED,
     }
 
+    enum class PermissionState {
+        RequestPermission,
+        ShowRationale,
+        LaunchSettings,
+        NoAction
+    }
+
     sealed class Event {
         data object CaptureTapped : Event()
         data object CloseTapped : Event()
         data object RetakeTapped : Event()
         data object FlashTapped : Event()
         data object BackTapped : Event()
-        data object Init : Event()
+        data class PermissionRequirementUpdated(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
+        data class OnScreenLaunch(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
         data object ClosePermissionDialogButtonTapped : Event()
 
         data object SubmitTapped : Event()
         data class ImageCaptured(val imageResult: PhotoResult) : Event()
         data class CameraInitialized(val cameraLensInfo: Map<Int, CameraLensFeatures>) : Event()
         data object FlipCameraLensTapped : Event()
-        data class UpdatePermissionState(val isGranted: Boolean) : Event()
     }
 
     sealed class Effect {

@@ -47,7 +47,7 @@ fun AppNavHost(
                 }
             )
         }
-        composable<PhotoCaptureDestination> {
+        appComposable<PhotoCaptureDestination> {
             PhotoCaptureScreen(navController, viewModel = hiltViewModel())
         }
     }

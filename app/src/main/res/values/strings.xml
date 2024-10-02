@@ -4,4 +4,6 @@
     <string name="add_media">Add Media</string>
     <string name="allow">Continue</string>
     <string name="permissions_required">Permissions Required</string>
+    <string name="_continue">Continue</string>
+    <string name="cancel">Cancel</string>
 </resources>
