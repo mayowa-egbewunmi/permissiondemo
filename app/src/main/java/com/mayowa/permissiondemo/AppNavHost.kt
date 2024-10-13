@@ -19,8 +19,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.mayowa.permissiondemo.ui.screens.MediaScreen
-import com.mayowa.permissiondemo.ui.screens.photo.PhotoCaptureScreen
+import com.mayowa.permissiondemo.ui.screens.EntryScreen
+import com.mayowa.permissiondemo.ui.screens.PhotoCaptureScreen
 import kotlinx.serialization.Serializable
 import kotlin.reflect.KType
 
@@ -41,11 +41,7 @@ fun AppNavHost(
         startDestination = PhotosDestination
     ) {
         appComposable<PhotosDestination> {
-            MediaScreen(
-                onPhotoCaptureClick = {
-                    navController.navigate(PhotoCaptureDestination)
-                }
-            )
+            EntryScreen(navController = navController, viewModel = hiltViewModel())
         }
         appComposable<PhotoCaptureDestination> {
             PhotoCaptureScreen(navController, viewModel = hiltViewModel())

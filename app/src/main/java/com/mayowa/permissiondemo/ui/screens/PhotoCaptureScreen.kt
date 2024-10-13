@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
-package com.mayowa.permissiondemo.ui.screens.photo
+package com.mayowa.permissiondemo.ui.screens
 
 import android.content.Intent
 import android.net.Uri
@@ -37,17 +37,18 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mayowa.permissiondemo.AppScaffold
+import com.mayowa.permissiondemo.MainActivity.Companion.requiredPermissions
 import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
 import com.mayowa.permissiondemo.cameramanager.PhotoCaptureManager
 import com.mayowa.permissiondemo.cameramanager.PhotoPreviewState
 import com.mayowa.permissiondemo.cameramanager.PhotoResult
+import com.mayowa.permissiondemo.models.PermissionAction
 import com.mayowa.permissiondemo.ui.composables.CameraCaptureIcon
 import com.mayowa.permissiondemo.ui.composables.CameraCloseIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
 import com.mayowa.permissiondemo.ui.composables.CameraPermissionSettingsDialog
 import com.mayowa.permissiondemo.ui.composables.PermissionRationaleDialog
-import com.mayowa.permissiondemo.ui.screens.photo.PhotoCaptureViewModel.Companion.requiredPermissions
 import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
@@ -113,7 +114,7 @@ fun PhotoCaptureScreen(
             modifier = Modifier.padding(innerPadding),
             flashSupported = state.flashSupported(),
             flashMode = state.flashMode,
-            permissionState = state.permissionState,
+            permissionAction = state.permissionAction,
             ungrantedPermissions = state.ungrantedPermissions,
             flipSupported = state.flipSupported(),
             cameraLens = state.cameraLens,
@@ -126,7 +127,7 @@ fun PhotoCaptureScreen(
 @Composable
 private fun PhotoCapturePreview(
     modifier: Modifier,
-    permissionState: PhotoCaptureViewModel.PermissionState?,
+    permissionAction: PermissionAction?,
     ungrantedPermissions: Set<String>,
     flashSupported: Boolean,
     @FlashMode flashMode: Int,
@@ -148,14 +149,14 @@ private fun PhotoCapturePreview(
             .then(modifier)
     ) {
         cameraLens?.let {
-            when (permissionState) {
-                PhotoCaptureViewModel.PermissionState.RequestPermission -> {
+            when (permissionAction) {
+                is PermissionAction.RequestPermission -> {
                     LaunchedEffect(Unit) {
                         permissionLauncher.launch(ungrantedPermissions.toTypedArray())
                     }
                 }
 
-                PhotoCaptureViewModel.PermissionState.ShowRationale -> {
+                is PermissionAction.ShowRationale -> {
                     PermissionRationaleDialog(
                         requiredPermissions = ungrantedPermissions,
                         onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
@@ -165,7 +166,7 @@ private fun PhotoCapturePreview(
                     )
                 }
 
-                PhotoCaptureViewModel.PermissionState.LaunchSettings -> {
+                is PermissionAction.LaunchSettings -> {
                     CameraPermissionSettingsDialog(
                         requiredPermissions = ungrantedPermissions,
                         onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
@@ -177,7 +178,7 @@ private fun PhotoCapturePreview(
                     )
                 }
 
-                PhotoCaptureViewModel.PermissionState.NoAction -> {
+                is PermissionAction.ProceedWithIntent -> {
                     PhotoCameraPreview(
                         modifier = Modifier.fillMaxSize(),
                         captureManager = captureManager,
@@ -185,6 +186,7 @@ private fun PhotoCapturePreview(
                         flashMode = flashMode
                     )
                 }
+
                 else -> Unit
             }
         }
