@@ -1,6 +1,5 @@
-package com.mayowa.permissiondemo.ui.screens.photo
+package com.mayowa.permissiondemo.ui.screens
 
-import android.Manifest
 import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -9,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
 import com.mayowa.permissiondemo.cameramanager.PhotoResult
 import com.mayowa.permissiondemo.di.ioDispatcher
+import com.mayowa.permissiondemo.models.PermissionAction
 import com.mayowa.permissiondemo.utils.MediaStorageUtil
 import com.mayowa.permissiondemo.utils.PrefKey
 import com.mayowa.permissiondemo.utils.SharedPreferenceUtil
@@ -69,36 +69,27 @@ class PhotoCaptureViewModel @Inject constructor(
         when {
             unGrantedPermissions.isEmpty() -> {
                 _state.update {
-                    it.copy(
-                        ungrantedPermissions = unGrantedPermissions,
-                        permissionState = PermissionState.NoAction
-                    )
+                    it.copy(permissionAction = PermissionAction.ProceedWithIntent(null))
                 }
             }
 
             isRationaleRequired -> {
                 _state.update {
-                    it.copy(
-                        ungrantedPermissions = unGrantedPermissions,
-                        permissionState = PermissionState.ShowRationale
-                    )
+                    it.copy(permissionAction = PermissionAction.ShowRationale(unGrantedPermissions))
                 }
             }
 
             sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions.toSet()) -> {
                 _state.update {
-                    it.copy(
-                        ungrantedPermissions = unGrantedPermissions,
-                        permissionState = PermissionState.LaunchSettings
-                    )
+                    it.copy(permissionAction = PermissionAction.LaunchSettings(unGrantedPermissions))
                 }
             }
 
             else -> {
                 _state.update {
                     it.copy(
-                        ungrantedPermissions = unGrantedPermissions,
-                        permissionState = PermissionState.RequestPermission
+                        permissionAction = PermissionAction.RequestPermission(unGrantedPermissions),
+                        ungrantedPermissions = unGrantedPermissions
                     )
                 }
             }
@@ -208,7 +199,7 @@ class PhotoCaptureViewModel @Inject constructor(
     data class State(
         val cameraPermissionGranted: Boolean = false,
         val cameraState: CameraState = CameraState.PHOTO_PREVIEW,
-        val permissionState: PermissionState? = null,
+        val permissionAction: PermissionAction? = null,
         val ungrantedPermissions: Set<String> = emptySet(),
         val filePath: String? = null,
         val cameraLensInfo: Map<Int, CameraLensFeatures> = mapOf(),
@@ -220,13 +211,6 @@ class PhotoCaptureViewModel @Inject constructor(
     enum class CameraState {
         PHOTO_PREVIEW,
         PHOTO_CAPTURED,
-    }
-
-    enum class PermissionState {
-        RequestPermission,
-        ShowRationale,
-        LaunchSettings,
-        NoAction
     }
 
     sealed class Event {
@@ -252,12 +236,6 @@ class PhotoCaptureViewModel @Inject constructor(
 
     private fun emitEffect(effect: Effect) = viewModelScope.launch {
         _effect.emit(effect)
-    }
-
-    companion object {
-        val requiredPermissions = listOf(
-            Manifest.permission.CAMERA
-        )
     }
 }
 

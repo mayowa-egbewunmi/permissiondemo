@@ -1,4 +1,4 @@
-package com.mayowa.permissiondemo.ui.screens.photo
+package com.mayowa.permissiondemo.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

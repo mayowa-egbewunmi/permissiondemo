@@ -1,5 +1,6 @@
 package com.mayowa.permissiondemo
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,6 +46,12 @@ class MainActivity : ComponentActivity() {
                 AppNavHost()
             }
         }
+    }
+
+    companion object {
+        val requiredPermissions = listOf(
+            Manifest.permission.CAMERA
+        )
     }
 }
 
