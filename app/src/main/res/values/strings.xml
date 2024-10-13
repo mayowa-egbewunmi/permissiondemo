@@ -6,4 +6,6 @@
     <string name="permissions_required">Permissions Required</string>
     <string name="_continue">Continue</string>
     <string name="cancel">Cancel</string>
+    <string name="camera_permission_rationale">We need access to your camera to capture photos.</string>
+    <string name="launch_settings">Launch Settings</string>
 </resources>

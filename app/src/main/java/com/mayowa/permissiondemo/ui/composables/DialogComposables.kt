@@ -39,7 +39,8 @@ fun PermissionRationaleDialog(
 @Composable
 fun CameraPermissionSettingsDialog(
     requiredPermissions: Set<String>,
-    onSettingsTapped: () -> Unit, onClose: () -> Unit,
+    onSettingsTapped: () -> Unit,
+    onClose: () -> Unit,
 ) {
     val rationaleText = remember(requiredPermissions) {
         requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
