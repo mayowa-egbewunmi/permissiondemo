@@ -49,9 +49,7 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        val requiredPermissions = listOf(
-            Manifest.permission.CAMERA
-        )
+        val requiredPermissions = listOf(Manifest.permission.CAMERA)
     }
 }
 
