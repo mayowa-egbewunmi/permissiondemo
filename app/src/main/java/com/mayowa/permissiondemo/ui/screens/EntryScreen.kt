@@ -45,8 +45,7 @@ import com.mayowa.permissiondemo.PhotoCaptureDestination
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PermissionAction
 import com.mayowa.permissiondemo.ui.composables.AppAsyncImage
-import com.mayowa.permissiondemo.ui.composables.CameraPermissionSettingsDialog
-import com.mayowa.permissiondemo.ui.composables.PermissionRationaleDialog
+import com.mayowa.permissiondemo.ui.modals.CustomPermissionModalScreen
 import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
@@ -66,15 +65,18 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
     AppScaffold(
         title = stringResource(id = R.string.media_screen_name),
         canGoBack = false,
+        showAppBar = !state.customRationaleDisplayed,
         modifier = Modifier.fillMaxSize(),
         actions = { EntryScreenActions() },
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                val requiredPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-                val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
-                viewModel.onEvent(EntryScreenViewModel.Event.TakePhotoTapped(requiredPermissions.toSet(), isRationaleRequired))
-            }) {
-                Icon(painterResource(id = R.drawable.ic_camara), contentDescription = "")
+            if (!state.customRationaleDisplayed) {
+                FloatingActionButton(onClick = {
+                    val requiredPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
+                    val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
+                    viewModel.onEvent(EntryScreenViewModel.Event.TakePhotoTapped(requiredPermissions.toSet(), isRationaleRequired))
+                }) {
+                    Icon(painterResource(id = R.drawable.ic_camara), contentDescription = "")
+                }
             }
         }
     ) { innerPadding ->
@@ -133,20 +135,24 @@ private fun EntryScreenContent(
             }
 
             is PermissionAction.ShowRationale -> {
-                PermissionRationaleDialog(
+                CustomPermissionModalScreen(
+                    isPermissionRequestable = true,
                     requiredPermissions = permissionAction.unGrantedPermissions,
                     onClose = { onEvent(EntryScreenViewModel.Event.OnPermissionRequestCancelled) },
-                    onRequestPermission = {
+                    onScreenLaunch = { onEvent(EntryScreenViewModel.Event.OnCustomRationaleDisplayed) },
+                    onProceed = {
                         permissionLauncher.launch(permissionAction.unGrantedPermissions.toTypedArray())
                     }
                 )
             }
 
             is PermissionAction.LaunchSettings -> {
-                CameraPermissionSettingsDialog(
+                CustomPermissionModalScreen(
+                    isPermissionRequestable = false,
                     requiredPermissions = permissionAction.unGrantedPermissions,
                     onClose = { onEvent(EntryScreenViewModel.Event.OnPermissionRequestCancelled) },
-                    onSettingsTapped = {
+                    onScreenLaunch = { onEvent(EntryScreenViewModel.Event.OnCustomRationaleDisplayed) },
+                    onProceed = {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                         intent.data = Uri.fromParts("package", context.packageName, null)
                         context.startActivity(intent)

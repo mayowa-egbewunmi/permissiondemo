@@ -98,6 +98,7 @@ fun AppScaffold(
     onGoBackTapped: () -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(),
     actions: @Composable RowScope.() -> Unit = {},
+    showAppBar: Boolean = true,
     topBar: @Composable () -> Unit = {
         AppTopBar(
             title = title,
@@ -118,7 +119,7 @@ fun AppScaffold(
 ) {
     Scaffold(
         modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = topBar,
+        topBar = { if (showAppBar) topBar() else Unit },
         bottomBar = bottomBar,
         snackbarHost = snackbarHost,
         floatingActionButton = floatingActionButton,

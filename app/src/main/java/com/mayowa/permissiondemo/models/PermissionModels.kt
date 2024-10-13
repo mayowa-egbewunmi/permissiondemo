@@ -11,6 +11,11 @@ val PERMISSION_RATIONALE = mapOf(
     Manifest.permission.ACCESS_MEDIA_LOCATION to "We need access to your media location to organize your photos by location.",
 )
 
+val PERMISSION_TITLE = mapOf(
+    Manifest.permission.CAMERA to "Camera Permission", // TODO: Use resource
+    Manifest.permission.ACCESS_MEDIA_LOCATION to "Media Location Permission", //TODO: Add icon
+)
+
 val PERMISSION_ICONS = mapOf(
     Manifest.permission.CAMERA to R.drawable.ic_art_camera,
     Manifest.permission.ACCESS_MEDIA_LOCATION to R.drawable.ic_art_camera, //TODO: Add icon
