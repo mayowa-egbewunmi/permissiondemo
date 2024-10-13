@@ -34,6 +34,7 @@ class EntryScreenViewModel @Inject constructor(
             is Event.TakePhotoTapped -> onTakePhotoTapped(event.requiredPermissions, event.rationaleRequired)
             is Event.OnPendingIntentConsumed -> onPendingIntentConsumed()
             is Event.OnScreenLaunch -> onScreenLaunch(event.requiredPermissions, event.rationaleRequired)
+            Event.OnCustomRationaleDisplayed -> onCustomRationaleDisplayed()
         }
     }
 
@@ -52,7 +53,7 @@ class EntryScreenViewModel @Inject constructor(
     }
 
     private fun onPendingIntentConsumed() {
-        _state.update { it.copy(pendingUiIntent = null) }
+        _state.update { it.copy(pendingUiIntent = null, customRationaleDisplayed = false) }
     }
 
     private fun updatePermissionAction(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
@@ -87,7 +88,11 @@ class EntryScreenViewModel @Inject constructor(
     }
 
     private fun onPermissionRequestCancelled() {
-        _state.update { it.copy(pendingUiIntent = null) }
+        _state.update { it.copy(pendingUiIntent = null, customRationaleDisplayed = false) }
+    }
+
+    private fun onCustomRationaleDisplayed() {
+        _state.update { it.copy(customRationaleDisplayed = true) }
     }
 
     data class State(
@@ -96,6 +101,7 @@ class EntryScreenViewModel @Inject constructor(
         val ungrantedPermissions: Set<String> = emptySet(),
         val randomPhotos: List<Photo> = randomSizedPhotos,
         val pendingUiIntent: UiIntent? = null,
+        val customRationaleDisplayed: Boolean = false,
     )
 
     sealed class UiIntent {
@@ -105,6 +111,7 @@ class EntryScreenViewModel @Inject constructor(
     sealed class Event {
         data object OnPermissionRequestCancelled : Event()
         data object OnPendingIntentConsumed : Event()
+        data object OnCustomRationaleDisplayed : Event()
         data class OnScreenLaunch(val requiredPermissions: Set<String>, val rationaleRequired: Boolean) : Event()
         data class PermissionRequirementUpdated(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
         data class TakePhotoTapped(val requiredPermissions: Set<String>, val rationaleRequired: Boolean) : Event()

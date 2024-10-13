@@ -1,6 +1,7 @@
 package com.mayowa.permissiondemo.ui.modals
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,23 +29,28 @@ import androidx.compose.ui.unit.dp
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PERMISSION_ICONS
 import com.mayowa.permissiondemo.models.PERMISSION_RATIONALE
+import com.mayowa.permissiondemo.models.PERMISSION_TITLE
 
 @Composable
 fun CustomPermissionModalScreen(
     isPermissionRequestable: Boolean,
     requiredPermissions: Set<String>,
+    onScreenLaunch: () -> Unit,
     onClose: () -> Unit,
     onProceed: () -> Unit,
 ) {
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { requiredPermissions.size })
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(modifier = Modifier.align(Alignment.End), onClick = onClose) {
             Icon(
-                painter = painterResource(id = android.R.drawable.ic_menu_close_clear_cancel),
+                painter = painterResource(id = R.drawable.ic_close_ii),
                 contentDescription = "",
             )
         }
@@ -52,6 +59,7 @@ fun CustomPermissionModalScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
+            val title = remember(page) { PERMISSION_TITLE[requiredPermissions.elementAt(page)] }
             val rationaleText = remember(page) { PERMISSION_RATIONALE[requiredPermissions.elementAt(page)] }
             val icon = remember(page) { PERMISSION_ICONS[requiredPermissions.elementAt(page)] }
 
@@ -61,20 +69,23 @@ fun CustomPermissionModalScreen(
                     .padding(16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = stringResource(id = R.string.permissions_required),
-                    style = MaterialTheme.typography.titleLarge
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = rationaleText!!,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Image(
-                    painter = painterResource(id = icon!!),
-                    contentDescription = ""
-                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Text(
+                        text = title!!,
+                        style = MaterialTheme.typography.headlineLarge
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Image(
+                        modifier = Modifier.height(240.dp),
+                        painter = painterResource(id = icon!!),
+                        contentDescription = ""
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = rationaleText!!,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
         Button(
@@ -100,6 +111,9 @@ fun CustomPermissionModalScreen(
 //            inactiveColor = Color.Gray
 //        )
     }
+    LaunchedEffect(Unit) {
+        onScreenLaunch()
+    }
 }
 
 @Preview
@@ -108,6 +122,7 @@ fun PermissionModalScreenPreview() {
     CustomPermissionModalScreen(
         isPermissionRequestable = true,
         onProceed = {},
+        onScreenLaunch = {},
         onClose = {},
         requiredPermissions = setOf("android.permission.CAMERA"),
     )
