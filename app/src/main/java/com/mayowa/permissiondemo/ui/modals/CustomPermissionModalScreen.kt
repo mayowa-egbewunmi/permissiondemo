@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.mayowa.permissiondemo.R
 
 @Composable
-fun PermissionModalScreen(
+fun CustomPermissionModalScreen(
     modifier: Modifier = Modifier,
     title: String,
     rationale: String,
@@ -82,7 +82,7 @@ fun PermissionModalScreen(
 @Preview
 @Composable
 fun PermissionModalScreenPreview() {
-    PermissionModalScreen(
+    CustomPermissionModalScreen(
         onProceed = {},
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
         title = "Permission Required",

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,7 +56,13 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
 
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
+    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
+        val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
+        val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), unGrantedPermissions)
+        viewModel.onEvent(EntryScreenViewModel.Event.PermissionRequirementUpdated(unGrantedPermissions.toSet(), isRationaleRequired))
+    }
     AppScaffold(
         title = stringResource(id = R.string.media_screen_name),
         canGoBack = false,
@@ -76,25 +83,8 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            EntryScreenContent(navController, state, viewModel::onEvent)
+            EntryScreenContent(permissionLauncher, navController, state, viewModel::onEvent)
         }
-    }
-}
-
-@Composable
-private fun EntryScreenContent(
-    navController: NavController,
-    state: EntryScreenViewModel.State,
-    onEvent: (EntryScreenViewModel.Event) -> Unit,
-) {
-
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-        val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), unGrantedPermissions)
-        onEvent(EntryScreenViewModel.Event.PermissionRequirementUpdated(unGrantedPermissions.toSet(), isRationaleRequired))
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -102,7 +92,7 @@ private fun EntryScreenContent(
             if (event == Lifecycle.Event.ON_START) {
                 val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
                 val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
-                onEvent(EntryScreenViewModel.Event.OnScreenLaunch(unGrantedPermissions.toSet(), isRationaleRequired))
+                viewModel.onEvent(EntryScreenViewModel.Event.OnScreenLaunch(unGrantedPermissions.toSet(), isRationaleRequired))
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -110,6 +100,17 @@ private fun EntryScreenContent(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
+}
+
+@Composable
+private fun EntryScreenContent(
+    permissionLauncher: ActivityResultLauncher<Array<String>>,
+    navController: NavController,
+    state: EntryScreenViewModel.State,
+    onEvent: (EntryScreenViewModel.Event) -> Unit,
+) {
+
+    val context = LocalContext.current
 
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Adaptive(200.dp),
@@ -122,8 +123,9 @@ private fun EntryScreenContent(
         },
         modifier = Modifier.fillMaxSize()
     )
-    if (state.pendingUiIntent != null) {
-        when (val permissionAction = state.permissionAction) {
+    val permissionAction = state.permissionAction
+    if (state.pendingUiIntent != null && permissionAction != null) {
+        when (permissionAction) {
             is PermissionAction.RequestPermission -> {
                 LaunchedEffect(Unit) {
                     permissionLauncher.launch(permissionAction.unGrantedPermissions.toTypedArray())
@@ -164,12 +166,9 @@ private fun EntryScreenContent(
                     }
                 }
             }
-
-            null -> Unit
         }
     }
 }
-
 
 @Composable
 private fun EntryScreenActions() {

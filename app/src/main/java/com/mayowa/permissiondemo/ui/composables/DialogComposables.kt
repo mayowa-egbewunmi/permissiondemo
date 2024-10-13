@@ -20,7 +20,7 @@ fun PermissionRationaleDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { /* Do nothing */ },
+        onDismissRequest = { onClose() },
         title = { Text(text = stringResource(id = R.string.permissions_required)) },
         text = { Text(text = rationaleText) },
         confirmButton = {
@@ -46,7 +46,7 @@ fun CameraPermissionSettingsDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { /* Do nothing */ },
+        onDismissRequest = { onClose() },
         title = { Text(text = stringResource(id = R.string.permissions_required)) },
         text = { Text(text = rationaleText) },
         confirmButton = {
