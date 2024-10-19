@@ -22,9 +22,9 @@ val PERMISSION_TITLE = mapOf(
 
 val PERMISSION_ICONS = mapOf(
     Manifest.permission.CAMERA to R.drawable.ic_art_camera,
-    Manifest.permission.ACCESS_MEDIA_LOCATION to R.drawable.ic_art_camera,
-    Manifest.permission.READ_MEDIA_IMAGES to R.drawable.ic_art_camera,
-    Manifest.permission.READ_EXTERNAL_STORAGE to R.drawable.ic_art_camera,
+    Manifest.permission.ACCESS_MEDIA_LOCATION to R.drawable.img_media_location,
+    Manifest.permission.READ_MEDIA_IMAGES to R.drawable.img_media,
+    Manifest.permission.READ_EXTERNAL_STORAGE to R.drawable.img_media,
 )
 
 sealed class PermissionAction {
