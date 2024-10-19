@@ -16,7 +16,7 @@ fun PermissionRationaleDialog(
     onClose: () -> Unit,
 ) {
     val rationaleText = remember(requiredPermissions) {
-        requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
+        requiredPermissions.mapNotNull { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
     }
 
     AlertDialog(
@@ -43,7 +43,7 @@ fun CameraPermissionSettingsDialog(
     onClose: () -> Unit,
 ) {
     val rationaleText = remember(requiredPermissions) {
-        requiredPermissions.map { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
+        requiredPermissions.mapNotNull { PERMISSION_RATIONALE[it] }.joinToString("\n\n")
     }
 
     AlertDialog(

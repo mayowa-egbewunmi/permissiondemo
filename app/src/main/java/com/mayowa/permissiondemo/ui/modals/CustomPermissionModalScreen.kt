@@ -5,13 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,9 +26,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PERMISSION_ICONS
@@ -39,7 +47,8 @@ fun CustomPermissionModalScreen(
     onClose: () -> Unit,
     onProceed: () -> Unit,
 ) {
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { requiredPermissions.size })
+    val displayedPermissions = remember(requiredPermissions) { requiredPermissions.filter { PERMISSION_RATIONALE[it] != null } }
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { displayedPermissions.size })
 
     Column(
         modifier = Modifier
@@ -59,9 +68,9 @@ fun CustomPermissionModalScreen(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
-            val title = remember(page) { PERMISSION_TITLE[requiredPermissions.elementAt(page)] }
-            val rationaleText = remember(page) { PERMISSION_RATIONALE[requiredPermissions.elementAt(page)] }
-            val icon = remember(page) { PERMISSION_ICONS[requiredPermissions.elementAt(page)] }
+            val title = remember(page) { PERMISSION_TITLE[displayedPermissions.elementAt(page)] }
+            val rationaleText = remember(page) { PERMISSION_RATIONALE[displayedPermissions.elementAt(page)] }
+            val icon = remember(page) { PERMISSION_ICONS[displayedPermissions.elementAt(page)] }
 
             Box(
                 modifier = Modifier
@@ -72,7 +81,8 @@ fun CustomPermissionModalScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     Text(
                         text = title!!,
-                        style = MaterialTheme.typography.headlineLarge
+                        style = MaterialTheme.typography.headlineMedium,
+                        textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(24.dp))
                     Image(
@@ -83,10 +93,24 @@ fun CustomPermissionModalScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = rationaleText!!,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
                     )
                 }
             }
+        }
+
+        if (displayedPermissions.size > 1) {
+            CustomHorizontalPagerIndicator(
+                pagerState = pagerState,
+                pageCount = displayedPermissions.size,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(16.dp),
+                activeColor = Color.Blue,
+                inactiveColor = Color.Gray
+            )
+            Spacer(modifier = Modifier.height(30.dp))
         }
         Button(
             modifier = Modifier
@@ -99,20 +123,35 @@ fun CustomPermissionModalScreen(
                 style = MaterialTheme.typography.labelMedium
             )
         }
-
-//        // Indicator
-//        HorizontalPagerIndicator(
-//            pagerState = pagerState,
-//            pageCount = pages.size,
-//            modifier = Modifier
-//                .align(Alignment.CenterHorizontally)
-//                .padding(16.dp),
-//            activeColor = Color.Blue,
-//            inactiveColor = Color.Gray
-//        )
     }
     LaunchedEffect(Unit) {
         onScreenLaunch()
+    }
+}
+
+@Composable
+fun CustomHorizontalPagerIndicator(
+    pagerState: PagerState,
+    pageCount: Int,
+    modifier: Modifier = Modifier,
+    activeColor: Color = Color.Blue,
+    inactiveColor: Color = Color.Gray,
+    indicatorSize: Dp = 16.dp,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        repeat(pageCount) { pageIndex ->
+            val isSelected = pageIndex == pagerState.currentPage
+            Box(
+                modifier = Modifier
+                    .size(indicatorSize)
+                    .padding(4.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) activeColor else inactiveColor)
+            )
+        }
     }
 }
 
