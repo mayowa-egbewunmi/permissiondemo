@@ -40,8 +40,8 @@ import com.mayowa.permissiondemo.models.PERMISSION_RATIONALE
 import com.mayowa.permissiondemo.models.PERMISSION_TITLE
 
 @Composable
-fun CustomPermissionModalScreen(
-    isPermissionRequestable: Boolean,
+fun MultiplePermissionsRationaleScreen(
+    requiresSettings: Boolean,
     requiredPermissions: Set<String>,
     onScreenLaunch: () -> Unit,
     onClose: () -> Unit,
@@ -119,7 +119,7 @@ fun CustomPermissionModalScreen(
             onClick = onProceed
         ) {
             Text(
-                text = stringResource(id = if (isPermissionRequestable) R.string._continue else R.string.launch_settings),
+                text = stringResource(id = if (requiresSettings) R.string._continue else R.string.launch_settings),
                 style = MaterialTheme.typography.labelMedium
             )
         }
@@ -158,8 +158,8 @@ fun CustomHorizontalPagerIndicator(
 @Preview
 @Composable
 fun PermissionModalScreenPreview() {
-    CustomPermissionModalScreen(
-        isPermissionRequestable = true,
+    MultiplePermissionsRationaleScreen(
+        requiresSettings = true,
         onProceed = {},
         onScreenLaunch = {},
         onClose = {},

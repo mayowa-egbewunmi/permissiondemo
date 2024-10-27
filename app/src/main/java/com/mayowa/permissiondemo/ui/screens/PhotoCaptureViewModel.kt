@@ -9,9 +9,9 @@ import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
 import com.mayowa.permissiondemo.cameramanager.PhotoResult
 import com.mayowa.permissiondemo.di.ioDispatcher
 import com.mayowa.permissiondemo.models.PermissionAction
+import com.mayowa.permissiondemo.models.PermissionAction.ShowRationale
 import com.mayowa.permissiondemo.utils.MediaStorageUtil
-import com.mayowa.permissiondemo.utils.PrefKey
-import com.mayowa.permissiondemo.utils.SharedPreferenceUtil
+import com.mayowa.permissiondemo.utils.PermissionUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
@@ -29,7 +29,7 @@ import javax.inject.Inject
 class PhotoCaptureViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val mediaStorageUtil: MediaStorageUtil,
-    private val sharedPreferenceUtil: SharedPreferenceUtil,
+    private val permissionUtil: PermissionUtil,
     @ioDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -61,35 +61,32 @@ class PhotoCaptureViewModel @Inject constructor(
     }
 
     private fun onPermissionRequirementUpdated(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions)
+        permissionUtil.cacheDeniedPermissions(unGrantedPermissions)
         updatePermissionState(unGrantedPermissions, isRationaleRequired)
     }
 
-    private fun updatePermissionState(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+    private fun updatePermissionState(unapprovedPermissions: Set<String>, isRationaleRequired: Boolean) {
         when {
-            unGrantedPermissions.isEmpty() -> {
+            unapprovedPermissions.isEmpty() -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.ProceedWithIntent(null))
+                    it.copy(permissionAction = PermissionAction.Proceed(null))
                 }
             }
 
             isRationaleRequired -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.ShowRationale(unGrantedPermissions))
+                    it.copy(permissionAction = PermissionAction.ShowRationale(unapprovedPermissions, false))
                 }
             }
-
-            sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions.toSet()) -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.LaunchSettings(unGrantedPermissions))
-                }
+            permissionUtil.isAnyPreviouslyDenied(unapprovedPermissions) -> {
+                _state.update { it.copy(permissionAction = ShowRationale(unapprovedPermissions, true)) }
             }
 
             else -> {
                 _state.update {
                     it.copy(
-                        permissionAction = PermissionAction.RequestPermission(unGrantedPermissions),
-                        ungrantedPermissions = unGrantedPermissions
+                        permissionAction = PermissionAction.RequestPermission(unapprovedPermissions),
+                        ungrantedPermissions = unapprovedPermissions
                     )
                 }
             }

@@ -28,8 +28,7 @@ val PERMISSION_ICONS = mapOf(
 )
 
 sealed class PermissionAction {
-    data class RequestPermission(val unGrantedPermissions: Set<String>) : PermissionAction()
-    data class ShowRationale(val unGrantedPermissions: Set<String>) : PermissionAction()
-    data class LaunchSettings(val unGrantedPermissions: Set<String>) : PermissionAction()
-    data class ProceedWithIntent(val intent: EntryScreenViewModel.UiIntent?) : PermissionAction()
+    data class RequestPermission(val unapprovedPermissions: Set<String>) : PermissionAction()
+    data class ShowRationale(val unapprovedPermissions: Set<String>, val requiresSettings: Boolean) : PermissionAction()
+    data class Proceed(val intent: EntryScreenViewModel.UiIntent?) : PermissionAction()
 }

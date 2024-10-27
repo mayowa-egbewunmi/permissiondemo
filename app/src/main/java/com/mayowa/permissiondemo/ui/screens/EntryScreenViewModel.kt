@@ -3,10 +3,12 @@ package com.mayowa.permissiondemo.ui.screens
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mayowa.permissiondemo.models.PermissionAction
+import com.mayowa.permissiondemo.models.PermissionAction.Proceed
+import com.mayowa.permissiondemo.models.PermissionAction.RequestPermission
+import com.mayowa.permissiondemo.models.PermissionAction.ShowRationale
 import com.mayowa.permissiondemo.models.Photo
 import com.mayowa.permissiondemo.models.randomSizedPhotos
-import com.mayowa.permissiondemo.utils.PrefKey
-import com.mayowa.permissiondemo.utils.SharedPreferenceUtil
+import com.mayowa.permissiondemo.utils.PermissionUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EntryScreenViewModel @Inject constructor(
-    private val sharedPreferenceUtil: SharedPreferenceUtil,
+    private val permissionUtil: PermissionUtil,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(State())
@@ -29,60 +31,75 @@ class EntryScreenViewModel @Inject constructor(
 
     fun onEvent(event: Event) {
         when (event) {
-            Event.OnPermissionRequestCancelled -> onPermissionRequestCancelled()
-            is Event.PermissionRequirementUpdated -> onPermissionRequirementUpdated(event.unGrantedPermissions, event.isRationaleRequired)
-            is Event.TakePhotoTapped -> onTakePhotoTapped(event.requiredPermissions, event.rationaleRequired)
-            is Event.OnPendingIntentConsumed -> onPendingIntentConsumed()
-            is Event.OnScreenLaunch -> onScreenLaunch(event.requiredPermissions, event.rationaleRequired)
-            Event.OnCustomRationaleDisplayed -> onCustomRationaleDisplayed()
+            Event.OnPermissionRequestCancelled -> {
+                onPermissionRequestCancelled()
+            }
+
+            is Event.PermissionStateUpdated -> {
+                onPermissionStateUpdated(event.unapprovedPermissions, event.isRationaleRequired)
+            }
+
+            is Event.TakePhotoTapped -> {
+                onTakePhotoTapped(event.unapprovedPermissions, event.rationaleRequired)
+            }
+
+            is Event.OnPendingIntentConsumed -> {
+                onPendingIntentConsumed()
+            }
+
+            is Event.OnScreenLaunch -> {
+                onScreenLaunch(event.unapprovedPermissions, event.rationaleRequired)
+            }
+
+            Event.OnCustomRationaleDisplayed -> {
+                onCustomRationaleDisplayed()
+            }
         }
     }
 
-    private fun onTakePhotoTapped(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+    private fun onTakePhotoTapped(
+        unapprovedPermissions: Set<String>,
+        isRationaleRequired: Boolean,
+    ) {
         _state.update { it.copy(pendingUiIntent = UiIntent.LaunchCameraScreen) }
-        updatePermissionAction(unGrantedPermissions, isRationaleRequired)
+        resolvePermissionAction(unapprovedPermissions, isRationaleRequired)
     }
 
-    private fun onScreenLaunch(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        updatePermissionAction(unGrantedPermissions, isRationaleRequired)
+    private fun onScreenLaunch(unapprovedPermissions: Set<String>, isRationaleRequired: Boolean) {
+        resolvePermissionAction(unapprovedPermissions, isRationaleRequired)
     }
 
-    private fun onPermissionRequirementUpdated(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions)
-        updatePermissionAction(unGrantedPermissions, isRationaleRequired)
+    private fun onPermissionStateUpdated(
+        unapprovedPermissions: Set<String>,
+        isRationaleRequired: Boolean,
+    ) {
+        permissionUtil.cacheDeniedPermissions(unapprovedPermissions)
+        resolvePermissionAction(unapprovedPermissions, isRationaleRequired)
     }
 
     private fun onPendingIntentConsumed() {
         _state.update { it.copy(pendingUiIntent = null, customRationaleDisplayed = false) }
     }
 
-    private fun updatePermissionAction(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+    private fun resolvePermissionAction(
+        unapprovedPermissions: Set<String>,
+        isRationaleRequired: Boolean,
+    ) {
         when {
-            unGrantedPermissions.isEmpty() -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.ProceedWithIntent(state.value.pendingUiIntent))
-                }
+            unapprovedPermissions.isEmpty() -> {
+                _state.update { it.copy(permissionAction = Proceed(state.value.pendingUiIntent)) }
             }
 
             isRationaleRequired -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.ShowRationale(unGrantedPermissions))
-                }
+                _state.update { it.copy(permissionAction = ShowRationale(unapprovedPermissions, false)) }
             }
 
-            sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, unGrantedPermissions.toSet()) -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.LaunchSettings(unGrantedPermissions))
-                }
+            permissionUtil.isAnyPreviouslyDenied(unapprovedPermissions) -> {
+                _state.update { it.copy(permissionAction = ShowRationale(unapprovedPermissions, true)) }
             }
 
             else -> {
-                _state.update {
-                    it.copy(
-                        permissionAction = PermissionAction.RequestPermission(unGrantedPermissions),
-                        ungrantedPermissions = unGrantedPermissions
-                    )
-                }
+                _state.update { it.copy(permissionAction = RequestPermission(unapprovedPermissions)) }
             }
         }
     }
@@ -98,7 +115,6 @@ class EntryScreenViewModel @Inject constructor(
     data class State(
         val cameraPermissionGranted: Boolean = false,
         val permissionAction: PermissionAction? = null,
-        val ungrantedPermissions: Set<String> = emptySet(),
         val randomPhotos: List<Photo> = randomSizedPhotos,
         val pendingUiIntent: UiIntent? = null,
         val customRationaleDisplayed: Boolean = false,
@@ -112,9 +128,9 @@ class EntryScreenViewModel @Inject constructor(
         data object OnPermissionRequestCancelled : Event()
         data object OnPendingIntentConsumed : Event()
         data object OnCustomRationaleDisplayed : Event()
-        data class OnScreenLaunch(val requiredPermissions: Set<String>, val rationaleRequired: Boolean) : Event()
-        data class PermissionRequirementUpdated(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
-        data class TakePhotoTapped(val requiredPermissions: Set<String>, val rationaleRequired: Boolean) : Event()
+        data class OnScreenLaunch(val unapprovedPermissions: Set<String>, val rationaleRequired: Boolean) : Event()
+        data class PermissionStateUpdated(val unapprovedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
+        data class TakePhotoTapped(val unapprovedPermissions: Set<String>, val rationaleRequired: Boolean) : Event()
     }
 
     sealed class Effect

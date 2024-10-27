@@ -24,11 +24,14 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import com.mayowa.permissiondemo.ui.theme.PermissiondemoTheme
+import com.mayowa.permissiondemo.utils.LocalPermissionUtil
+import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.SharedPreferenceUtil
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -39,12 +42,17 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var sharedPreferenceUtil: SharedPreferenceUtil
 
+    @Inject
+    lateinit var permissionUtil: PermissionUtil
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             PermissiondemoTheme {
-                AppNavHost()
+                CompositionLocalProvider(LocalPermissionUtil provides permissionUtil) {
+                    AppNavHost()
+                }
             }
         }
     }
