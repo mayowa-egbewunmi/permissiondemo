@@ -57,6 +57,7 @@ import com.mayowa.permissiondemo.utils.getActivity
 fun PhotoCaptureScreen(
     navigationController: NavController,
     viewModel: PhotoCaptureViewModel,
+    permissionUtil: PermissionUtil,
 ) {
 
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -98,8 +99,8 @@ fun PhotoCaptureScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
-                val requiredPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-                val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
+                val requiredPermissions = permissionUtil.filterNotGranted(context.getActivity(), requiredPermissions)
+                val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), requiredPermissions)
                 viewModel.onEvent(PhotoCaptureViewModel.Event.OnScreenLaunch(requiredPermissions.toSet(), isRationaleRequired))
             }
         }
@@ -120,6 +121,7 @@ fun PhotoCaptureScreen(
             cameraLens = state.cameraLens,
             captureManager = captureManager,
             onEvent = viewModel::onEvent,
+            permissionUtil = permissionUtil,
         )
     }
 }
@@ -133,13 +135,14 @@ private fun PhotoCapturePreview(
     @FlashMode flashMode: Int,
     flipSupported: Boolean,
     @LensFacing cameraLens: Int?,
+    permissionUtil: PermissionUtil,
     captureManager: PhotoCaptureManager,
     onEvent: (PhotoCaptureViewModel.Event) -> Unit,
 ) {
     val context = LocalContext.current.getActivity()
     val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-        val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), unGrantedPermissions)
+        val unGrantedPermissions = permissionUtil.filterNotGranted(context.getActivity(), requiredPermissions)
+        val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unGrantedPermissions)
         onEvent(PhotoCaptureViewModel.Event.PermissionRequirementUpdated(unGrantedPermissions.toSet(), isRationaleRequired))
     }
 
@@ -157,28 +160,27 @@ private fun PhotoCapturePreview(
                 }
 
                 is PermissionAction.ShowRationale -> {
-                    PermissionRationaleDialog(
-                        requiredPermissions = ungrantedPermissions,
-                        onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
-                        onRequestPermission = {
-                            permissionLauncher.launch(ungrantedPermissions.toTypedArray())
-                        }
-                    )
+                    if (permissionAction.requiresSettings) {
+                        CameraPermissionSettingsDialog(
+                            requiredPermissions = ungrantedPermissions,
+                            onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
+                            onSettingsTapped = {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                                intent.data = Uri.fromParts("package", context.packageName, null)
+                                context.startActivity(intent)
+                            }
+                        )
+                    } else {
+                        PermissionRationaleDialog(
+                            requiredPermissions = ungrantedPermissions,
+                            onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
+                            onRequestPermission = {
+                                permissionLauncher.launch(ungrantedPermissions.toTypedArray())
+                            }
+                        )
+                    }
                 }
-
-                is PermissionAction.LaunchSettings -> {
-                    CameraPermissionSettingsDialog(
-                        requiredPermissions = ungrantedPermissions,
-                        onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
-                        onSettingsTapped = {
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            intent.data = Uri.fromParts("package", context.packageName, null)
-                            context.startActivity(intent)
-                        }
-                    )
-                }
-
-                is PermissionAction.ProceedWithIntent -> {
+                is PermissionAction.Proceed -> {
                     PhotoCameraPreview(
                         modifier = Modifier.fillMaxSize(),
                         captureManager = captureManager,

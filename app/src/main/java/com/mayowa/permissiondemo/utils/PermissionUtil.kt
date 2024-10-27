@@ -4,12 +4,16 @@ import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import javax.inject.Inject
 
-object PermissionUtil {
+class PermissionUtil @Inject constructor(
+    private val sharedPreferenceUtil: SharedPreferenceUtil,
+) {
 
-    fun filterPermissionsNotGranted(context: Activity, permissions: List<String>): List<String> {
+    fun filterNotGranted(context: Activity, permissions: List<String>): List<String> {
         return permissions.filter { permission ->
             when (permission) {
                 Manifest.permission.READ_MEDIA_IMAGES,
@@ -27,8 +31,16 @@ object PermissionUtil {
         }
     }
 
-    fun shouldShowRequestPermissionRationale(context: Activity, permissions: List<String>): Boolean {
+    fun shouldShowRationale(context: Activity, permissions: List<String>): Boolean {
         return permissions.isNotEmpty() && permissions.all { ActivityCompat.shouldShowRequestPermissionRationale(context, it) }
+    }
+
+    fun isAnyPreviouslyDenied(permissions: Set<String>): Boolean {
+        return sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, permissions.toSet())
+    }
+
+    fun cacheDeniedPermissions(permissions: Set<String>) {
+        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, permissions)
     }
 
     private fun isReadMediaStoragePermissionOnApi34Granted(permission: String, context: Activity): Boolean {
@@ -47,3 +59,5 @@ object PermissionUtil {
         }
     }
 }
+
+val LocalPermissionUtil = staticCompositionLocalOf<PermissionUtil> { error("No PermissionUtil provided") }

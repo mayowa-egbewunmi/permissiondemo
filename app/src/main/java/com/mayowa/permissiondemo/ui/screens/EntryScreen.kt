@@ -45,8 +45,8 @@ import com.mayowa.permissiondemo.PhotoCaptureDestination
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PermissionAction
 import com.mayowa.permissiondemo.ui.composables.AppAsyncImage
-import com.mayowa.permissiondemo.ui.modals.CustomPermissionModalScreen
-import com.mayowa.permissiondemo.utils.PermissionUtil
+import com.mayowa.permissiondemo.ui.modals.MultiplePermissionsRationaleScreen
+import com.mayowa.permissiondemo.utils.LocalPermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,11 +56,12 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val permissionUtil = LocalPermissionUtil.current
 
     val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-        val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), unGrantedPermissions)
-        viewModel.onEvent(EntryScreenViewModel.Event.PermissionRequirementUpdated(unGrantedPermissions.toSet(), isRationaleRequired))
+        val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), requiredPermissions)
+        val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unapprovedPermissions)
+        viewModel.onEvent(EntryScreenViewModel.Event.PermissionStateUpdated(unapprovedPermissions.toSet(), isRationaleRequired))
     }
     AppScaffold(
         title = stringResource(id = R.string.media_screen_name),
@@ -71,9 +72,9 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
         floatingActionButton = {
             if (!state.customRationaleDisplayed) {
                 FloatingActionButton(onClick = {
-                    val requiredPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-                    val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
-                    viewModel.onEvent(EntryScreenViewModel.Event.TakePhotoTapped(requiredPermissions.toSet(), isRationaleRequired))
+                    val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), requiredPermissions)
+                    val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unapprovedPermissions)
+                    viewModel.onEvent(EntryScreenViewModel.Event.TakePhotoTapped(unapprovedPermissions.toSet(), isRationaleRequired))
                 }) {
                     Icon(painterResource(id = R.drawable.ic_camara), contentDescription = "")
                 }
@@ -85,16 +86,23 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
                 .padding(innerPadding)
                 .fillMaxSize()
         ) {
-            EntryScreenContent(permissionLauncher, navController, state, viewModel::onEvent)
+            EntryScreenContent(
+                permissionLauncher = permissionLauncher,
+                launchCameraScreen = {
+                    navController.navigate(PhotoCaptureDestination)
+                },
+                state = state,
+                onEvent = viewModel::onEvent
+            )
         }
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_START) {
-                val unGrantedPermissions = PermissionUtil.filterPermissionsNotGranted(context.getActivity(), requiredPermissions)
-                val isRationaleRequired = PermissionUtil.shouldShowRequestPermissionRationale(context.getActivity(), requiredPermissions)
-                viewModel.onEvent(EntryScreenViewModel.Event.OnScreenLaunch(unGrantedPermissions.toSet(), isRationaleRequired))
+                val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), requiredPermissions)
+                val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), requiredPermissions)
+                viewModel.onEvent(EntryScreenViewModel.Event.OnScreenLaunch(unapprovedPermissions.toSet(), isRationaleRequired))
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -107,7 +115,7 @@ fun EntryScreen(navController: NavController, viewModel: EntryScreenViewModel) {
 @Composable
 private fun EntryScreenContent(
     permissionLauncher: ActivityResultLauncher<Array<String>>,
-    navController: NavController,
+    launchCameraScreen: () -> Unit,
     state: EntryScreenViewModel.State,
     onEvent: (EntryScreenViewModel.Event) -> Unit,
 ) {
@@ -130,45 +138,37 @@ private fun EntryScreenContent(
         when (permissionAction) {
             is PermissionAction.RequestPermission -> {
                 LaunchedEffect(Unit) {
-                    permissionLauncher.launch(permissionAction.unGrantedPermissions.toTypedArray())
+                    permissionLauncher.launch(permissionAction.unapprovedPermissions.toTypedArray())
                 }
             }
 
             is PermissionAction.ShowRationale -> {
-                CustomPermissionModalScreen(
-                    isPermissionRequestable = true,
-                    requiredPermissions = permissionAction.unGrantedPermissions,
+                MultiplePermissionsRationaleScreen(
+                    requiresSettings = !permissionAction.requiresSettings,
+                    requiredPermissions = permissionAction.unapprovedPermissions,
                     onClose = { onEvent(EntryScreenViewModel.Event.OnPermissionRequestCancelled) },
                     onScreenLaunch = { onEvent(EntryScreenViewModel.Event.OnCustomRationaleDisplayed) },
                     onProceed = {
-                        permissionLauncher.launch(permissionAction.unGrantedPermissions.toTypedArray())
-                    }
-                )
-            }
-
-            is PermissionAction.LaunchSettings -> {
-                CustomPermissionModalScreen(
-                    isPermissionRequestable = false,
-                    requiredPermissions = permissionAction.unGrantedPermissions,
-                    onClose = { onEvent(EntryScreenViewModel.Event.OnPermissionRequestCancelled) },
-                    onScreenLaunch = { onEvent(EntryScreenViewModel.Event.OnCustomRationaleDisplayed) },
-                    onProceed = {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        intent.data = Uri.fromParts("package", context.packageName, null)
-                        context.startActivity(intent)
-                    }
-                )
-            }
-
-            is PermissionAction.ProceedWithIntent -> {
-                LaunchedEffect(Unit) {
-                    when (permissionAction.intent) {
-                        EntryScreenViewModel.UiIntent.LaunchCameraScreen -> {
-                            navController.navigate(PhotoCaptureDestination)
-                            onEvent(EntryScreenViewModel.Event.OnPendingIntentConsumed)
+                        if (permissionAction.requiresSettings) {
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = Uri.fromParts("package", context.packageName, null)
+                            context.startActivity(intent)
+                        } else {
+                            permissionLauncher.launch(permissionAction.unapprovedPermissions.toTypedArray())
                         }
+                    }
+                )
+            }
 
-                        null -> Unit
+            is PermissionAction.Proceed -> {
+                LaunchedEffect(Unit) {
+                    permissionAction.intent?.let {
+                        when (permissionAction.intent) {
+                            EntryScreenViewModel.UiIntent.LaunchCameraScreen -> {
+                                onEvent(EntryScreenViewModel.Event.OnPendingIntentConsumed)
+                                launchCameraScreen()
+                            }
+                        }
                     }
                 }
             }
