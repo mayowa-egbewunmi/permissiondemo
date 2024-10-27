@@ -37,7 +37,7 @@ fun PermissionRationaleDialog(
 }
 
 @Composable
-fun CameraPermissionSettingsDialog(
+fun PermissionSettingsDialog(
     requiredPermissions: Set<String>,
     onSettingsTapped: () -> Unit,
     onClose: () -> Unit,

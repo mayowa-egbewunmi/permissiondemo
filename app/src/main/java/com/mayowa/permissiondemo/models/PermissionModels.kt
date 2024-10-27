@@ -3,7 +3,7 @@ package com.mayowa.permissiondemo.models
 import android.Manifest
 import android.annotation.SuppressLint
 import com.mayowa.permissiondemo.R
-import com.mayowa.permissiondemo.ui.screens.EntryScreenViewModel
+import com.mayowa.permissiondemo.ui.permissions.PermissionStateManager
 
 @SuppressLint("InlinedApi")
 val PERMISSION_RATIONALE = mapOf(
@@ -28,7 +28,8 @@ val PERMISSION_ICONS = mapOf(
 )
 
 sealed class PermissionAction {
-    data class RequestPermission(val unapprovedPermissions: Set<String>) : PermissionAction()
-    data class ShowRationale(val unapprovedPermissions: Set<String>, val requiresSettings: Boolean) : PermissionAction()
-    data class Proceed(val intent: EntryScreenViewModel.UiIntent?) : PermissionAction()
+    abstract val unapprovedPermissions: Set<String>
+    data class RequestPermission(override val unapprovedPermissions: Set<String>) : PermissionAction()
+    data class ShowRationale(override val unapprovedPermissions: Set<String>, val requiresSettings: Boolean) : PermissionAction()
+    data class Proceed(override val unapprovedPermissions: Set<String>, val intent: PermissionStateManager.PendingPermissionIntent?) : PermissionAction()
 }

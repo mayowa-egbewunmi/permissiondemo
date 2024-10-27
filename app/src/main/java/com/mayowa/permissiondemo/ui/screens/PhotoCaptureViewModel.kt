@@ -69,7 +69,7 @@ class PhotoCaptureViewModel @Inject constructor(
         when {
             unapprovedPermissions.isEmpty() -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.Proceed(null))
+                    it.copy(permissionAction = PermissionAction.Proceed(unapprovedPermissions, null))
                 }
             }
 
