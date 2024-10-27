@@ -47,8 +47,8 @@ import com.mayowa.permissiondemo.ui.composables.CameraCaptureIcon
 import com.mayowa.permissiondemo.ui.composables.CameraCloseIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
-import com.mayowa.permissiondemo.ui.composables.CameraPermissionSettingsDialog
 import com.mayowa.permissiondemo.ui.composables.PermissionRationaleDialog
+import com.mayowa.permissiondemo.ui.composables.PermissionSettingsDialog
 import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
@@ -161,7 +161,7 @@ private fun PhotoCapturePreview(
 
                 is PermissionAction.ShowRationale -> {
                     if (permissionAction.requiresSettings) {
-                        CameraPermissionSettingsDialog(
+                        PermissionSettingsDialog(
                             requiredPermissions = ungrantedPermissions,
                             onClose = { onEvent(PhotoCaptureViewModel.Event.ClosePermissionDialogButtonTapped) },
                             onSettingsTapped = {
