@@ -49,6 +49,7 @@ import com.mayowa.permissiondemo.ui.composables.CameraFlashIcon
 import com.mayowa.permissiondemo.ui.composables.CameraFlipIcon
 import com.mayowa.permissiondemo.ui.composables.PermissionRationaleDialog
 import com.mayowa.permissiondemo.ui.composables.PermissionSettingsDialog
+import com.mayowa.permissiondemo.utils.LocalPermissionUtil
 import com.mayowa.permissiondemo.utils.PermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
@@ -57,9 +58,9 @@ import com.mayowa.permissiondemo.utils.getActivity
 fun PhotoCaptureScreen(
     navigationController: NavController,
     viewModel: PhotoCaptureViewModel,
-    permissionUtil: PermissionUtil,
 ) {
 
+    val permissionUtil = LocalPermissionUtil.current
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current

@@ -16,7 +16,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mayowa.permissiondemo.models.PermissionAction
-import com.mayowa.permissiondemo.utils.PermissionUtil
+import com.mayowa.permissiondemo.utils.LocalPermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
 @Composable
@@ -24,29 +24,16 @@ fun PermissionWrapper(
     permissionStateManager: PermissionStateManager,
     permissions: List<String>,
     onPendingIntentInvoked: (PermissionStateManager.PendingPermissionIntent) -> Unit,
-    permissionUtil: PermissionUtil,
-    screenContent: @Composable (requirePermissions: (PermissionStateManager.PendingPermissionIntent, callback: () -> Unit) -> Unit) -> Unit,
+    screenContent: @Composable (requirePermissions: (PermissionStateManager.PendingPermissionIntent, () -> Unit) -> Unit) -> Unit,
 ) {
+    val permissionUtil = LocalPermissionUtil.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by permissionStateManager.state.collectAsStateWithLifecycle()
     val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        val unGrantedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
-        val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unGrantedPermissions)
-        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(unGrantedPermissions.toSet(), isRationaleRequired))
-    }
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val unGrantedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
-                val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), permissions)
-                permissionStateManager.onEvent(PermissionStateManager.Event.OnScreenLaunch(unGrantedPermissions.toSet(), isRationaleRequired))
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
+        val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
+        val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unapprovedPermissions)
+        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(unapprovedPermissions.toSet(), isRationaleRequired))
     }
     screenContent(permissionStateManager::requirePermissions)
 
@@ -58,6 +45,19 @@ fun PermissionWrapper(
             onEvent = permissionStateManager::onEvent,
             onPendingIntentInvoked = onPendingIntentInvoked,
         )
+    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
+                val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), permissions)
+                permissionStateManager.onEvent(PermissionStateManager.Event.OnScreenLaunch(unapprovedPermissions.toSet(), isRationaleRequired))
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 }
 
