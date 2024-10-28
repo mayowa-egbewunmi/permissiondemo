@@ -28,8 +28,14 @@ val PERMISSION_ICONS = mapOf(
 )
 
 sealed class PermissionAction {
-    abstract val unapprovedPermissions: Set<String>
-    data class RequestPermission(override val unapprovedPermissions: Set<String>) : PermissionAction()
-    data class ShowRationale(override val unapprovedPermissions: Set<String>, val requiresSettings: Boolean) : PermissionAction()
-    data class Proceed(override val unapprovedPermissions: Set<String>, val intent: PermissionStateManager.PendingPermissionIntent?) : PermissionAction()
+    abstract val permissionsToRequest: Set<PermissionMeta>
+    data class RequestPermission(override val permissionsToRequest: Set<PermissionMeta>) : PermissionAction()
+    data class ShowRationale(override val permissionsToRequest: Set<PermissionMeta>, val requiresSettings: Boolean) : PermissionAction()
+    data class Proceed(override val permissionsToRequest: Set<PermissionMeta>, val intent: PermissionStateManager.PendingPermissionIntent?) : PermissionAction()
 }
+
+data class PermissionMeta(
+    val permission: String,
+    val shouldShowRationale: Boolean,
+    val requiresSettings: Boolean,
+)

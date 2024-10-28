@@ -16,6 +16,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mayowa.permissiondemo.models.PermissionAction
+import com.mayowa.permissiondemo.models.PermissionMeta
 import com.mayowa.permissiondemo.utils.LocalPermissionUtil
 import com.mayowa.permissiondemo.utils.getActivity
 
@@ -24,7 +25,10 @@ fun PermissionWrapper(
     permissionStateManager: PermissionStateManager,
     permissions: List<String>,
     onPendingIntentInvoked: (PermissionStateManager.PendingPermissionIntent) -> Unit,
-    screenContent: @Composable (requirePermissions: (PermissionStateManager.PendingPermissionIntent, () -> Unit) -> Unit) -> Unit,
+    screenContent: @Composable (
+        unapprovedPermissions: Set<PermissionMeta>,
+        requirePermissions: (PermissionStateManager.PendingPermissionIntent, () -> Unit) -> Unit,
+    ) -> Unit,
 ) {
     val permissionUtil = LocalPermissionUtil.current
     val context = LocalContext.current
@@ -32,11 +36,23 @@ fun PermissionWrapper(
     val state by permissionStateManager.state.collectAsStateWithLifecycle()
     val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
         val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
-        val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), unapprovedPermissions)
-        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(unapprovedPermissions.toSet(), isRationaleRequired))
+        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(unapprovedPermissions.toSet()))
     }
-    screenContent(permissionStateManager::requirePermissions)
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
+                permissionStateManager.onEvent(PermissionStateManager.Event.OnScreenLaunch(unapprovedPermissions.toSet()))
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    screenContent(state.unapprovedScreenPermissions, permissionStateManager::requirePermissions)
     val permissionAction = state.permissionAction
     if (state.pendingPermissionIntent != null && permissionAction != null) {
         PermissionScreenContent(
@@ -45,19 +61,6 @@ fun PermissionWrapper(
             onEvent = permissionStateManager::onEvent,
             onPendingIntentInvoked = onPendingIntentInvoked,
         )
-    }
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
-                val isRationaleRequired = permissionUtil.shouldShowRationale(context.getActivity(), permissions)
-                permissionStateManager.onEvent(PermissionStateManager.Event.OnScreenLaunch(unapprovedPermissions.toSet(), isRationaleRequired))
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
     }
 }
 
@@ -69,17 +72,19 @@ private fun PermissionScreenContent(
     onPendingIntentInvoked: (PermissionStateManager.PendingPermissionIntent) -> Unit,
 ) {
     val context = LocalContext.current
+    val permissionsToRequest = permissionAction.permissionsToRequest.map { it.permission }.toSet()
+
     when (permissionAction) {
         is PermissionAction.RequestPermission -> {
             LaunchedEffect(Unit) {
-                permissionLauncher.launch(permissionAction.unapprovedPermissions.toTypedArray())
+                permissionLauncher.launch(permissionsToRequest.toTypedArray())
             }
         }
 
         is PermissionAction.ShowRationale -> {
             MultiplePermissionsRationaleScreen(
                 requiresSettings = permissionAction.requiresSettings,
-                requiredPermissions = permissionAction.unapprovedPermissions,
+                requiredPermissions = permissionsToRequest,
                 onClose = { onEvent(PermissionStateManager.Event.OnPermissionRequestCancelled) },
                 onProceed = {
                     if (permissionAction.requiresSettings) {
@@ -87,7 +92,7 @@ private fun PermissionScreenContent(
                         intent.data = Uri.fromParts("package", context.packageName, null)
                         context.startActivity(intent)
                     } else {
-                        permissionLauncher.launch(permissionAction.unapprovedPermissions.toTypedArray())
+                        permissionLauncher.launch(permissionsToRequest.toTypedArray())
                     }
                 }
             )
@@ -98,7 +103,7 @@ private fun PermissionScreenContent(
                 permissionAction.intent?.let {
                     onEvent(PermissionStateManager.Event.OnPendingIntentConsumed)
                     when (permissionAction.intent) {
-                        PermissionStateManager.PendingPermissionIntent.LaunchCameraScreen -> {
+                        is PermissionStateManager.PendingPermissionIntent.LaunchCameraScreen -> {
                             onPendingIntentInvoked(permissionAction.intent)
                         }
                     }

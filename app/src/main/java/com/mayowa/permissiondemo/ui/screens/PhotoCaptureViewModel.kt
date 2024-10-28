@@ -1,6 +1,5 @@
 package com.mayowa.permissiondemo.ui.screens
 
-import android.content.Context
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.lifecycle.ViewModel
@@ -9,11 +8,8 @@ import com.mayowa.permissiondemo.cameramanager.CameraLensFeatures
 import com.mayowa.permissiondemo.cameramanager.PhotoResult
 import com.mayowa.permissiondemo.di.ioDispatcher
 import com.mayowa.permissiondemo.models.PermissionAction
-import com.mayowa.permissiondemo.models.PermissionAction.ShowRationale
 import com.mayowa.permissiondemo.utils.MediaStorageUtil
-import com.mayowa.permissiondemo.utils.PermissionUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,9 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PhotoCaptureViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val mediaStorageUtil: MediaStorageUtil,
-    private val permissionUtil: PermissionUtil,
     @ioDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -51,45 +45,6 @@ class PhotoCaptureViewModel @Inject constructor(
             Event.SubmitTapped -> onSubmitTapped()
             is Event.ImageCaptured -> onImageCaptured(event.imageResult)
             is Event.CameraInitialized -> onCameraInitialized(event.cameraLensInfo)
-            is Event.PermissionRequirementUpdated -> onPermissionRequirementUpdated(event.unGrantedPermissions, event.isRationaleRequired)
-            is Event.OnScreenLaunch -> onScreenLaunch(event.unGrantedPermissions, event.isRationaleRequired)
-        }
-    }
-
-    private fun onScreenLaunch(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        updatePermissionState(unGrantedPermissions, isRationaleRequired)
-    }
-
-    private fun onPermissionRequirementUpdated(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        permissionUtil.cacheDeniedPermissions(unGrantedPermissions)
-        updatePermissionState(unGrantedPermissions, isRationaleRequired)
-    }
-
-    private fun updatePermissionState(unapprovedPermissions: Set<String>, isRationaleRequired: Boolean) {
-        when {
-            unapprovedPermissions.isEmpty() -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.Proceed(unapprovedPermissions, null))
-                }
-            }
-
-            isRationaleRequired -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.ShowRationale(unapprovedPermissions, false))
-                }
-            }
-            permissionUtil.isAnyPreviouslyDenied(unapprovedPermissions) -> {
-                _state.update { it.copy(permissionAction = ShowRationale(unapprovedPermissions, true)) }
-            }
-
-            else -> {
-                _state.update {
-                    it.copy(
-                        permissionAction = PermissionAction.RequestPermission(unapprovedPermissions),
-                        ungrantedPermissions = unapprovedPermissions
-                    )
-                }
-            }
         }
     }
 
@@ -216,8 +171,6 @@ class PhotoCaptureViewModel @Inject constructor(
         data object RetakeTapped : Event()
         data object FlashTapped : Event()
         data object BackTapped : Event()
-        data class PermissionRequirementUpdated(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
-        data class OnScreenLaunch(val unGrantedPermissions: Set<String>, val isRationaleRequired: Boolean) : Event()
         data object ClosePermissionDialogButtonTapped : Event()
 
         data object SubmitTapped : Event()
