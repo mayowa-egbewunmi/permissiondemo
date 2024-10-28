@@ -20,8 +20,8 @@ class PermissionStateManager @Inject constructor(
         } else {
             _state.update { it.copy(pendingPermissionIntent = pendingPermissionIntent) }
             val isRationaleRequired = _state.value.permissionAction is PermissionAction.ShowRationale
-            val unGrantedPermissions = _state.value.permissionAction?.unapprovedPermissions ?: emptySet()
-            resolvePermissionStatus(unGrantedPermissions, isRationaleRequired)
+            val unapprovedPermissions = _state.value.permissionAction?.unapprovedPermissions ?: emptySet()
+            resolvePermissionStatus(unapprovedPermissions, isRationaleRequired)
         }
     }
 
@@ -48,25 +48,25 @@ class PermissionStateManager @Inject constructor(
         _state.update { it.copy(pendingPermissionIntent = null) }
     }
 
-    private fun resolvePermissionStatus(unGrantedPermissions: Set<String>, isRationaleRequired: Boolean) {
+    private fun resolvePermissionStatus(unapprovedPermissions: Set<String>, isRationaleRequired: Boolean) {
         when {
-            unGrantedPermissions.isEmpty() -> {
+            unapprovedPermissions.isEmpty() -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.Proceed(unGrantedPermissions, state.value.pendingPermissionIntent))
+                    it.copy(permissionAction = PermissionAction.Proceed(unapprovedPermissions, state.value.pendingPermissionIntent))
                 }
             }
 
             isRationaleRequired -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.ShowRationale(unGrantedPermissions, permissionUtil.isAnyPreviouslyDenied(unGrantedPermissions)))
+                    it.copy(permissionAction = PermissionAction.ShowRationale(unapprovedPermissions, permissionUtil.isAnyPreviouslyDenied(unapprovedPermissions)))
                 }
             }
 
             else -> {
                 _state.update {
                     it.copy(
-                        permissionAction = PermissionAction.RequestPermission(unGrantedPermissions),
-                        ungrantedPermissions = unGrantedPermissions
+                        permissionAction = PermissionAction.RequestPermission(unapprovedPermissions),
+                        ungrantedPermissions = unapprovedPermissions
                     )
                 }
             }

@@ -21,9 +21,8 @@ class PermissionUtil @Inject constructor(
                 Manifest.permission.READ_MEDIA_AUDIO,
                 Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
                 -> {
-                    !isReadMediaStoragePermissionOnApi34Granted(permission, context)
+                    !isReadMediaStoragePermissionGranted(permission, context)
                 }
-
                 else -> {
                     ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
                 }
@@ -43,17 +42,10 @@ class PermissionUtil @Inject constructor(
         sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, permissions)
     }
 
-    private fun isReadMediaStoragePermissionOnApi34Granted(permission: String, context: Activity): Boolean {
+    private fun isReadMediaStoragePermissionGranted(permission: String, context: Activity): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val alternatePermissionOptionGranted = when (permission) {
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO,
-                -> ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED
-
-                else -> ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-            }
-            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED || alternatePermissionOptionGranted
+            val isVisualSelectorGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) == PackageManager.PERMISSION_GRANTED
+            return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED || isVisualSelectorGranted
         } else {
             return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
         }
