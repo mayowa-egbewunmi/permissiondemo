@@ -7,13 +7,18 @@ import android.os.Build
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.mayowa.permissiondemo.models.PermissionMeta
 import javax.inject.Inject
 
 class PermissionUtil @Inject constructor(
     private val sharedPreferenceUtil: SharedPreferenceUtil,
 ) {
 
-    fun filterNotGranted(context: Activity, permissions: List<String>): List<String> {
+    fun cacheDeniedPermissions(permissions: Set<String>) {
+        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, permissions)
+    }
+
+    fun filterNotGranted(context: Activity, permissions: List<String>): List<PermissionMeta> {
         return permissions.filter { permission ->
             when (permission) {
                 Manifest.permission.READ_MEDIA_IMAGES,
@@ -27,19 +32,21 @@ class PermissionUtil @Inject constructor(
                     ContextCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED
                 }
             }
+        }.map {
+            PermissionMeta(
+                permission = it,
+                shouldShowRationale = shouldShowRationale(context, it),
+                requiresSettings = isPreviouslyDenied(it)
+            )
         }
     }
 
-    fun shouldShowRationale(context: Activity, permissions: List<String>): Boolean {
-        return permissions.isNotEmpty() && permissions.all { ActivityCompat.shouldShowRequestPermissionRationale(context, it) }
+    private fun shouldShowRationale(context: Activity, permission: String): Boolean {
+        return ActivityCompat.shouldShowRequestPermissionRationale(context, permission)
     }
 
-    fun isAnyPreviouslyDenied(permissions: Set<String>): Boolean {
-        return sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, permissions.toSet())
-    }
-
-    fun cacheDeniedPermissions(permissions: Set<String>) {
-        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, permissions)
+    private fun isPreviouslyDenied(permission: String): Boolean {
+        return sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, setOf(permission))
     }
 
     private fun isReadMediaStoragePermissionGranted(permission: String, context: Activity): Boolean {

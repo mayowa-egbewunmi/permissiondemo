@@ -8,4 +8,7 @@
     <string name="cancel">Cancel</string>
     <string name="camera_permission_rationale">We need access to your camera to capture photos.</string>
     <string name="launch_settings">Launch Settings</string>
+    <string name="precious_moments_caption">Your precious memories in one place</string>
+    <string name="save_pictures_caption">Your best photos deserves to live forever. Tap the button below to get started</string>
+    <string name="get_started">Get Started</string>
 </resources>

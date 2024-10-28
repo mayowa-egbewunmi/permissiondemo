@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
     }
 
     companion object {
-        val requiredPermissions = buildList {
+        val screenPermissions = buildList {
             add(Manifest.permission.CAMERA)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 add(Manifest.permission.READ_MEDIA_IMAGES)
