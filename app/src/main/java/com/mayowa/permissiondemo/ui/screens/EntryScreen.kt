@@ -1,6 +1,8 @@
 package com.mayowa.permissiondemo.ui.screens
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -130,6 +133,12 @@ private fun EntryScreenContent(
             modifier = Modifier.fillMaxSize()
         )
     }
+
+    LaunchedEffect(Unit) {
+        if (permissionsToRequest.isEmpty()) {
+            onEvent(EntryScreenViewModel.Event.SelectedPhotosUpdated)
+        }
+    }
 }
 
 @Composable
@@ -141,25 +150,24 @@ private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () ->
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(modifier = Modifier.weight(1f)) {
-            Text(
-                text = stringResource(R.string.precious_moments_caption),
-                style = MaterialTheme.typography.headlineMedium,
-                textAlign = TextAlign.Center
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Image(
-                modifier = Modifier.height(240.dp),
-                painter = painterResource(id = R.drawable.img_art_person_capture),
-                contentDescription = ""
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.save_pictures_caption),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            text = stringResource(R.string.precious_moments_caption),
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Image(
+            modifier = Modifier.height(240.dp),
+            painter = painterResource(id = R.drawable.img_art_person_capture),
+            contentDescription = ""
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.save_pictures_caption),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(24.dp))
         Button(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
@@ -176,10 +184,15 @@ private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () ->
             )
         }
     }
+
 }
 
 @Composable
 private fun EntryScreenActions(requirePermissions: (PendingPermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
+    val pickMultiplePhotosLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
+        onEvent(EntryScreenViewModel.Event.SelectedPhotosUpdated)
+    }
+
     val menuExpanded = remember { mutableStateOf(false) }
     IconButton(onClick = { menuExpanded.value = true }) {
         Icon(
@@ -201,7 +214,7 @@ private fun EntryScreenActions(requirePermissions: (PendingPermissionIntent, () 
             text = { Text(stringResource(id = R.string.add_media)) },
             onClick = {
                 requirePermissions(PendingPermissionIntent.FetchMediaPhotos(EntryScreenViewModel.MEDIA_PERMISSIONS)) {
-                    onEvent(EntryScreenViewModel.Event.AddMorePhotosButtonTapped)
+                    pickMultiplePhotosLauncher.launch(EntryScreenViewModel.MEDIA_PERMISSIONS.toTypedArray())
                 }
             },
         )

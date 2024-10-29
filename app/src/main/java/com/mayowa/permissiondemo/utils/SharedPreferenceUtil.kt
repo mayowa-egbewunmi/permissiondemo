@@ -34,6 +34,10 @@ class SharedPreferenceUtil @Inject constructor(
         return sharedPreferences.getStringSet(key.name, null)?.contains(value) ?: false
     }
 
+    fun getStringSet(key: PrefKey): Set<String>? {
+        return sharedPreferences.getStringSet(key.name, null)
+    }
+
     fun containsAny(key: PrefKey, value: Set<String>): Boolean {
         val values = sharedPreferences.getStringSet(key.name, null) ?: return false
         return value.any { values.contains(it) }
@@ -46,5 +50,5 @@ class SharedPreferenceUtil @Inject constructor(
 }
 
 enum class PrefKey {
-    DENIED_PERMISSIONS
+    REQUESTED_PERMISSIONS
 }
