@@ -16,7 +16,7 @@ class PermissionStateManager @Inject constructor(
     val state = _state.asStateFlow()
 
     fun requirePermissions(pendingPermissionIntent: PendingPermissionIntent, callback: () -> Unit) {
-        val permissionsToRequest = pendingPermissionIntent.neededPermissions
+        val permissionsToRequest = pendingPermissionIntent.requiredPermissions
             .mapNotNull { neededPermission ->
                 state.value.unapprovedPermissions
                     .firstOrNull {
@@ -68,7 +68,7 @@ class PermissionStateManager @Inject constructor(
 
     private fun resolvePendingPermissionIntent(pendingPermissionIntent: PendingPermissionIntent) {
         val unapprovedPermissions = _state.value.unapprovedPermissions
-        val permissionsToRequest = pendingPermissionIntent.neededPermissions
+        val permissionsToRequest = pendingPermissionIntent.requiredPermissions
             .mapNotNull { neededPermission -> unapprovedPermissions.firstOrNull { it.permission == neededPermission } }
             .toSet()
 
@@ -113,9 +113,9 @@ class PermissionStateManager @Inject constructor(
     }
 
     sealed class PendingPermissionIntent {
-        abstract val neededPermissions: List<String>
+        abstract val requiredPermissions: List<String>
 
-        data class LaunchCameraScreen(override val neededPermissions: List<String>) : PendingPermissionIntent()
-        data class FetchMediaPhotos(override val neededPermissions: List<String>) : PendingPermissionIntent()
+        data class LaunchCameraScreen(override val requiredPermissions: List<String>) : PendingPermissionIntent()
+        data class FetchMediaPhotos(override val requiredPermissions: List<String>) : PendingPermissionIntent()
     }
 }
