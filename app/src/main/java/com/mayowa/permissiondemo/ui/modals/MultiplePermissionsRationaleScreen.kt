@@ -119,7 +119,7 @@ fun MultiplePermissionsRationaleScreen(
             onClick = onProceed
         ) {
             Text(
-                text = stringResource(id = if (requiresSettings) R.string._continue else R.string.launch_settings),
+                text = stringResource(id = if (requiresSettings) R.string.launch_settings else R.string._continue),
                 style = MaterialTheme.typography.labelMedium
             )
         }

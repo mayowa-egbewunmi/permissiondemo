@@ -35,8 +35,8 @@ class EntryScreenViewModel @Inject constructor(
         when (event) {
             is Event.TakePhotoTapped -> takePhoto()
             is Event.OnPendingIntentInvoked -> onPendingIntentInvoked(event.pendingIntent)
-            Event.GetStartedButtonTapped -> displayPhotos()
-            Event.AddMorePhotosButtonTapped -> addMorePhotos()
+            Event.GetStartedButtonTapped -> onGetStartedButtonTapped()
+            Event.SelectedPhotosUpdated -> onSelectedPhotosUpdated()
         }
     }
 
@@ -45,6 +45,14 @@ class EntryScreenViewModel @Inject constructor(
             is PermissionStateManager.PendingPermissionIntent.LaunchCameraScreen -> takePhoto()
             is PermissionStateManager.PendingPermissionIntent.FetchMediaPhotos -> displayPhotos()
         }
+    }
+
+    private fun onGetStartedButtonTapped() {
+        displayPhotos()
+    }
+
+    private fun onSelectedPhotosUpdated() {
+        displayPhotos()
     }
 
     private fun displayPhotos() {
@@ -66,10 +74,6 @@ class EntryScreenViewModel @Inject constructor(
         }
     }
 
-    private fun addMorePhotos() {
-
-    }
-
     private fun takePhoto() {
         emitEffect(Effect.LaunchCameraScreen)
     }
@@ -81,7 +85,7 @@ class EntryScreenViewModel @Inject constructor(
     sealed class Event {
         data object TakePhotoTapped : Event()
         data object GetStartedButtonTapped : Event()
-        data object AddMorePhotosButtonTapped : Event()
+        data object SelectedPhotosUpdated : Event()
         data class OnPendingIntentInvoked(val pendingIntent: PermissionStateManager.PendingPermissionIntent) : Event()
     }
 

@@ -14,8 +14,11 @@ class PermissionUtil @Inject constructor(
     private val sharedPreferenceUtil: SharedPreferenceUtil,
 ) {
 
-    fun cacheDeniedPermissions(permissions: Set<String>) {
-        sharedPreferenceUtil.put(PrefKey.DENIED_PERMISSIONS, permissions)
+    fun cacheRequestedPermissions(permissions: Set<String>) {
+        val requestedPermissions = sharedPreferenceUtil.getStringSet(PrefKey.REQUESTED_PERMISSIONS)
+            ?.toMutableSet() ?: mutableSetOf()
+        requestedPermissions.addAll(permissions)
+        sharedPreferenceUtil.put(PrefKey.REQUESTED_PERMISSIONS, permissions)
     }
 
     fun filterNotGranted(context: Activity, permissions: List<String>): List<PermissionMeta> {
@@ -36,7 +39,7 @@ class PermissionUtil @Inject constructor(
             PermissionMeta(
                 permission = it,
                 shouldShowRationale = shouldShowRationale(context, it),
-                requiresSettings = isPreviouslyDenied(it)
+                requiresSettings = isPreviouslyRequested(it)
             )
         }
     }
@@ -45,8 +48,8 @@ class PermissionUtil @Inject constructor(
         return ActivityCompat.shouldShowRequestPermissionRationale(context, permission)
     }
 
-    private fun isPreviouslyDenied(permission: String): Boolean {
-        return sharedPreferenceUtil.containsAny(PrefKey.DENIED_PERMISSIONS, setOf(permission))
+    private fun isPreviouslyRequested(permission: String): Boolean {
+        return sharedPreferenceUtil.containsAny(PrefKey.REQUESTED_PERMISSIONS, setOf(permission))
     }
 
     private fun isReadMediaStoragePermissionGranted(permission: String, context: Activity): Boolean {

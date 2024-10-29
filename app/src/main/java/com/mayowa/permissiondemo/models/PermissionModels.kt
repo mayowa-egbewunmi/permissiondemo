@@ -13,6 +13,7 @@ val PERMISSION_RATIONALE = mapOf(
     Manifest.permission.READ_EXTERNAL_STORAGE to "We need access to your media images to display them in the app.",
 )
 
+@SuppressLint("InlinedApi")
 val PERMISSION_TITLE = mapOf(
     Manifest.permission.CAMERA to "Camera Permission",
     Manifest.permission.ACCESS_MEDIA_LOCATION to "Media Location Permission",
@@ -20,6 +21,7 @@ val PERMISSION_TITLE = mapOf(
     Manifest.permission.READ_EXTERNAL_STORAGE to "Media Images Permission",
 )
 
+@SuppressLint("InlinedApi")
 val PERMISSION_ICONS = mapOf(
     Manifest.permission.CAMERA to R.drawable.ic_art_camera,
     Manifest.permission.ACCESS_MEDIA_LOCATION to R.drawable.img_media_location,

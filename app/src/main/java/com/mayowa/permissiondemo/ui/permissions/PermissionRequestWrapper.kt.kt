@@ -34,9 +34,10 @@ fun PermissionWrapper(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val state by permissionStateManager.state.collectAsStateWithLifecycle()
-    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        val unapprovedPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
-        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(unapprovedPermissions.toSet()))
+    val permissionLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        val requestedPermissions = result.map { it.key }.toSet()
+        val unapprovedScreenPermissions = permissionUtil.filterNotGranted(context.getActivity(), permissions)
+        permissionStateManager.onEvent(PermissionStateManager.Event.PermissionStateUpdated(requestedPermissions, unapprovedScreenPermissions.toSet()))
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -52,7 +53,7 @@ fun PermissionWrapper(
         }
     }
 
-    screenContent(state.unapprovedScreenPermissions, permissionStateManager::requirePermissions)
+    screenContent(state.unapprovedPermissions, permissionStateManager::requirePermissions)
     val permissionAction = state.permissionAction
     if (state.pendingPermissionIntent != null && permissionAction != null) {
         PermissionScreenContent(
@@ -101,12 +102,8 @@ private fun PermissionScreenContent(
         is PermissionAction.Proceed -> {
             LaunchedEffect(Unit) {
                 permissionAction.intent?.let {
+                    onPendingIntentInvoked(permissionAction.intent)
                     onEvent(PermissionStateManager.Event.OnPendingIntentConsumed)
-                    when (permissionAction.intent) {
-                        is PermissionStateManager.PendingPermissionIntent.LaunchCameraScreen -> {
-                            onPendingIntentInvoked(permissionAction.intent)
-                        }
-                    }
                 }
             }
         }
