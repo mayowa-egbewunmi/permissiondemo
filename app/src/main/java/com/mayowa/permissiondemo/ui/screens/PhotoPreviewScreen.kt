@@ -1,5 +1,6 @@
 package com.mayowa.permissiondemo.ui.screens
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +40,7 @@ fun PhotoPreviewScreen(
         ) {
             AppAsyncImage(
                 modifier = Modifier.fillMaxSize(),
-                filePath = filePath
+                mediaUri = Uri.parse(filePath),
             )
             Box(
                 modifier = Modifier

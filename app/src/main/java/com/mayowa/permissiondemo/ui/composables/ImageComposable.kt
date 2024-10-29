@@ -1,5 +1,6 @@
 package com.mayowa.permissiondemo.ui.composables
 
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
@@ -22,7 +23,7 @@ import coil.request.ImageRequest
 
 @Composable
 fun AppAsyncImage(
-    filePath: String,
+    mediaUri: Uri,
     modifier: Modifier = Modifier,
     contentDescription: String? = "",
     contentScale: ContentScale = ContentScale.Crop,
@@ -41,7 +42,7 @@ fun AppAsyncImage(
     AsyncImage(
         model = ImageRequest
             .Builder(LocalContext.current)
-            .data(filePath)
+            .data(mediaUri)
             .crossfade(true)
             .build(),
         imageLoader = loader,
