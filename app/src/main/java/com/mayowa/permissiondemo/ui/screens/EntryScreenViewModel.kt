@@ -36,7 +36,7 @@ class EntryScreenViewModel @Inject constructor(
             is Event.TakePhotoTapped -> takePhoto()
             is Event.OnPendingIntentInvoked -> onPendingIntentInvoked(event.pendingIntent)
             Event.GetStartedButtonTapped -> onGetStartedButtonTapped()
-            Event.SelectedPhotosUpdated -> onSelectedPhotosUpdated()
+            Event.RefreshRequested -> onSelectedPhotosUpdated()
         }
     }
 
@@ -85,7 +85,7 @@ class EntryScreenViewModel @Inject constructor(
     sealed class Event {
         data object TakePhotoTapped : Event()
         data object GetStartedButtonTapped : Event()
-        data object SelectedPhotosUpdated : Event()
+        data object RefreshRequested : Event()
         data class OnPendingIntentInvoked(val pendingIntent: PermissionStateManager.PendingPermissionIntent) : Event()
     }
 

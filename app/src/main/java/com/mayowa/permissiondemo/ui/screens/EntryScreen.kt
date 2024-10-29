@@ -136,7 +136,7 @@ private fun EntryScreenContent(
 
     LaunchedEffect(Unit) {
         if (permissionsToRequest.isEmpty()) {
-            onEvent(EntryScreenViewModel.Event.SelectedPhotosUpdated)
+            onEvent(EntryScreenViewModel.Event.RefreshRequested)
         }
     }
 }
@@ -190,7 +190,7 @@ private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () ->
 @Composable
 private fun EntryScreenActions(requirePermissions: (PendingPermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
     val pickMultiplePhotosLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
-        onEvent(EntryScreenViewModel.Event.SelectedPhotosUpdated)
+        onEvent(EntryScreenViewModel.Event.RefreshRequested)
     }
 
     val menuExpanded = remember { mutableStateOf(false) }
