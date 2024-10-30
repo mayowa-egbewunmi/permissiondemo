@@ -7,6 +7,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,11 +42,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.mayowa.permissiondemo.AppScaffold
 import com.mayowa.permissiondemo.PhotoCaptureDestination
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PermissionMeta
-import com.mayowa.permissiondemo.ui.composables.AppAsyncImage
 import com.mayowa.permissiondemo.ui.permissions.PermissionStateManager.PendingPermissionIntent
 import com.mayowa.permissiondemo.ui.permissions.PermissionUIWrapper
 
@@ -122,15 +123,15 @@ private fun EntryScreenContent(
         EmptyStateScreen(requirePermissions, onEvent)
     } else {
         LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Adaptive(200.dp),
+            columns = StaggeredGridCells.Adaptive(150.dp),
+            contentPadding = PaddingValues(16.dp),
             verticalItemSpacing = 4.dp,
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             content = {
-                items(state.photoUris) { photo ->
-                    AppAsyncImage(mediaUri = photo.mediaUri)
+                items(state.photoUris, key = { it.mediaUri.path!! }) { photo ->
+                    AsyncImage(model = photo.mediaUri, contentDescription = null)
                 }
-            },
-            modifier = Modifier.fillMaxSize()
+            }
         )
     }
 
