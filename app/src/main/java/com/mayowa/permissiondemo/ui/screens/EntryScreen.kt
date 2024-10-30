@@ -42,13 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.mayowa.permissiondemo.AppScaffold
-import com.mayowa.permissiondemo.MainActivity.Companion.screenPermissions
 import com.mayowa.permissiondemo.PhotoCaptureDestination
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PermissionMeta
 import com.mayowa.permissiondemo.ui.composables.AppAsyncImage
 import com.mayowa.permissiondemo.ui.permissions.PermissionStateManager.PendingPermissionIntent
-import com.mayowa.permissiondemo.ui.permissions.PermissionWrapper
+import com.mayowa.permissiondemo.ui.permissions.PermissionUIWrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,11 +58,12 @@ fun EntryScreen(
 
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    PermissionWrapper(
+    PermissionUIWrapper(
         permissionStateManager = viewModel.permissionStateManager,
-        permissions = screenPermissions,
+        permissions = EntryScreenViewModel.allPermissions,
         onPendingIntentInvoked = { viewModel.onEvent(EntryScreenViewModel.Event.OnPendingIntentInvoked(it)) },
-        screenContent = { unapprovedPermissions, requirePermissions ->
+        screenContent = { unapprovedPermissions ->
+            val requirePermissions = viewModel.permissionStateManager::requirePermissions
             AppScaffold(
                 title = stringResource(id = R.string.media_screen_name),
                 canGoBack = false,

@@ -14,14 +14,7 @@ class PermissionUtil @Inject constructor(
     private val sharedPreferenceUtil: SharedPreferenceUtil,
 ) {
 
-    fun cacheRequestedPermissions(permissions: Set<String>) {
-        val requestedPermissions = sharedPreferenceUtil.getStringSet(PrefKey.REQUESTED_PERMISSIONS)
-            ?.toMutableSet() ?: mutableSetOf()
-        requestedPermissions.addAll(permissions)
-        sharedPreferenceUtil.put(PrefKey.REQUESTED_PERMISSIONS, permissions)
-    }
-
-    fun filterNotGranted(context: Activity, permissions: List<String>): List<PermissionMeta> {
+    fun filterNotGranted(context: Activity, permissions: Set<String>): List<PermissionMeta> {
         return permissions.filter { permission ->
             when (permission) {
                 Manifest.permission.READ_MEDIA_IMAGES,
@@ -42,6 +35,13 @@ class PermissionUtil @Inject constructor(
                 requiresSettings = isPreviouslyRequested(it)
             )
         }
+    }
+
+    fun cacheRequestedPermissions(permissions: Set<String>) {
+        val requestedPermissions = sharedPreferenceUtil.getStringSet(PrefKey.REQUESTED_PERMISSIONS)
+            ?.toMutableSet() ?: mutableSetOf()
+        requestedPermissions.addAll(permissions)
+        sharedPreferenceUtil.put(PrefKey.REQUESTED_PERMISSIONS, permissions)
     }
 
     private fun shouldShowRationale(context: Activity, permission: String): Boolean {
