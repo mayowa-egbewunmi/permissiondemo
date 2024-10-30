@@ -98,7 +98,7 @@ class EntryScreenViewModel @Inject constructor(
     }
 
     companion object {
-        val MEDIA_PERMISSIONS = buildList {
+        val MEDIA_PERMISSIONS = buildSet {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 add(Manifest.permission.READ_MEDIA_IMAGES)
                 add(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
@@ -108,6 +108,8 @@ class EntryScreenViewModel @Inject constructor(
                 add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-        val CAMERA_PERMISSIONS = listOf(Manifest.permission.CAMERA)
+        val CAMERA_PERMISSIONS = setOf(Manifest.permission.CAMERA)
+
+        val allPermissions = MEDIA_PERMISSIONS + CAMERA_PERMISSIONS
     }
 }
