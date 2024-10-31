@@ -40,10 +40,10 @@ class EntryScreenViewModel @Inject constructor(
         }
     }
 
-    private fun onPendingIntentInvoked(pendingIntent: PermissionStateManager.PendingPermissionIntent) {
+    private fun onPendingIntentInvoked(pendingIntent: PermissionStateManager.PermissionIntent) {
         when (pendingIntent) {
-            is PermissionStateManager.PendingPermissionIntent.LaunchCameraScreen -> takePhoto()
-            is PermissionStateManager.PendingPermissionIntent.FetchMediaPhotos -> displayPhotos()
+            is PermissionStateManager.PermissionIntent.LaunchCameraScreen -> takePhoto()
+            is PermissionStateManager.PermissionIntent.FetchMediaPhotos -> displayPhotos()
         }
     }
 
@@ -86,7 +86,7 @@ class EntryScreenViewModel @Inject constructor(
         data object TakePhotoTapped : Event()
         data object GetStartedButtonTapped : Event()
         data object RefreshRequested : Event()
-        data class OnPendingIntentInvoked(val pendingIntent: PermissionStateManager.PendingPermissionIntent) : Event()
+        data class OnPendingIntentInvoked(val pendingIntent: PermissionStateManager.PermissionIntent) : Event()
     }
 
     sealed class Effect {

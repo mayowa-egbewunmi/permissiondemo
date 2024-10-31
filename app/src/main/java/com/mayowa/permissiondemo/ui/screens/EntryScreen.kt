@@ -47,7 +47,7 @@ import com.mayowa.permissiondemo.AppScaffold
 import com.mayowa.permissiondemo.PhotoCaptureDestination
 import com.mayowa.permissiondemo.R
 import com.mayowa.permissiondemo.models.PermissionMeta
-import com.mayowa.permissiondemo.ui.permissions.PermissionStateManager.PendingPermissionIntent
+import com.mayowa.permissiondemo.ui.permissions.PermissionStateManager.PermissionIntent
 import com.mayowa.permissiondemo.ui.permissions.PermissionUIWrapper
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,7 +62,7 @@ fun EntryScreen(
     PermissionUIWrapper(
         permissionStateManager = viewModel.permissionStateManager,
         permissions = EntryScreenViewModel.allPermissions,
-        onPendingIntentInvoked = { viewModel.onEvent(EntryScreenViewModel.Event.OnPendingIntentInvoked(it)) },
+        onPermissionIntentInvoked = { viewModel.onEvent(EntryScreenViewModel.Event.OnPendingIntentInvoked(it)) },
         screenContent = { unapprovedPermissions ->
             val requirePermissions = viewModel.permissionStateManager::requirePermissions
             AppScaffold(
@@ -73,7 +73,7 @@ fun EntryScreen(
                 floatingActionButton = {
                     FloatingActionButton(onClick = {
                         val requiredPermissions = EntryScreenViewModel.CAMERA_PERMISSIONS
-                        requirePermissions(PendingPermissionIntent.LaunchCameraScreen(requiredPermissions)) {
+                        requirePermissions(PermissionIntent.LaunchCameraScreen(requiredPermissions)) {
                             viewModel.onEvent(EntryScreenViewModel.Event.TakePhotoTapped)
                         }
                     }) {
@@ -107,7 +107,7 @@ private fun EntryScreenContent(
     unapprovedPermissions: Set<PermissionMeta>,
     state: EntryScreenViewModel.State,
     onEvent: (EntryScreenViewModel.Event) -> Unit,
-    requirePermissions: (PendingPermissionIntent, () -> Unit) -> Unit,
+    requirePermissions: (PermissionIntent, () -> Unit) -> Unit,
 ) {
     val permissionsToRequest = remember(unapprovedPermissions) {
         EntryScreenViewModel.MEDIA_PERMISSIONS
@@ -143,7 +143,7 @@ private fun EntryScreenContent(
 }
 
 @Composable
-private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
+private fun EmptyStateScreen(requirePermissions: (PermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -174,7 +174,7 @@ private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () ->
                 .fillMaxWidth(0.9f)
                 .align(Alignment.CenterHorizontally),
             onClick = {
-                requirePermissions(PendingPermissionIntent.FetchMediaPhotos(EntryScreenViewModel.MEDIA_PERMISSIONS)) {
+                requirePermissions(PermissionIntent.FetchMediaPhotos(EntryScreenViewModel.MEDIA_PERMISSIONS)) {
                     onEvent(EntryScreenViewModel.Event.GetStartedButtonTapped)
                 }
             }
@@ -189,7 +189,7 @@ private fun EmptyStateScreen(requirePermissions: (PendingPermissionIntent, () ->
 }
 
 @Composable
-private fun EntryScreenActions(requirePermissions: (PendingPermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
+private fun EntryScreenActions(requirePermissions: (PermissionIntent, () -> Unit) -> Unit, onEvent: (EntryScreenViewModel.Event) -> Unit) {
     val pickMultiplePhotosLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.RequestMultiplePermissions()) {
         onEvent(EntryScreenViewModel.Event.RefreshRequested)
     }
@@ -214,7 +214,7 @@ private fun EntryScreenActions(requirePermissions: (PendingPermissionIntent, () 
             },
             text = { Text(stringResource(id = R.string.add_media)) },
             onClick = {
-                requirePermissions(PendingPermissionIntent.FetchMediaPhotos(EntryScreenViewModel.MEDIA_PERMISSIONS)) {
+                requirePermissions(PermissionIntent.FetchMediaPhotos(EntryScreenViewModel.MEDIA_PERMISSIONS)) {
                     pickMultiplePhotosLauncher.launch(EntryScreenViewModel.MEDIA_PERMISSIONS.toTypedArray())
                 }
             },
