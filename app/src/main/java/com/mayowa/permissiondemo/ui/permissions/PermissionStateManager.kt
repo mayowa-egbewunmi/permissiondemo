@@ -15,14 +15,14 @@ class PermissionStateManager @Inject constructor(
     private val _state = MutableStateFlow(State())
     val state = _state.asStateFlow()
 
-    fun requirePermissions(pendingPermissionIntent: PendingPermissionIntent, callback: () -> Unit) {
-        val permissionsToRequest = pendingPermissionIntent.requiredPermissions
+    fun requirePermissions(permissionIntent: PermissionIntent, callback: () -> Unit) {
+        val permissionsToRequest = permissionIntent.requiredPermissions
             .mapNotNull { neededPermission -> state.value.unapprovedPermissions.firstOrNull { it.permission == neededPermission } }
         if (permissionsToRequest.isEmpty()) {
             callback()
         } else {
-            _state.update { it.copy(pendingPermissionIntent = pendingPermissionIntent) }
-            resolvePendingPermissionIntent(pendingPermissionIntent)
+            _state.update { it.copy(permissionIntent = permissionIntent) }
+            resolvePermissionIntent(permissionIntent)
         }
     }
 
@@ -30,60 +30,57 @@ class PermissionStateManager @Inject constructor(
         when (event) {
             is Event.OnScreenStarted -> onScreenStarted(event.unapprovedPermissions)
             is Event.PermissionStateUpdated -> onPermissionStateUpdated(event.requestedPermissions, event.unapprovedPermissions)
-            is Event.OnPendingIntentConsumed -> onPendingIntentConsumed()
-            Event.OnPermissionRequestCancelled -> onPermissionRequestCancelled()
+            is Event.PermissionIntentConsumed -> onPermissionIntentConsumed()
+            Event.PermissionRequestCancelled -> onPermissionRequestCancelled()
         }
     }
 
     private fun onScreenStarted(unapprovedPermissions: Set<PermissionMeta>) {
         _state.update { it.copy(unapprovedPermissions = unapprovedPermissions) }
-        val pendingPermissionIntent = _state.value.pendingPermissionIntent
-        if (pendingPermissionIntent != null) {
-            resolvePendingPermissionIntent(pendingPermissionIntent)
+        val permissionIntent = _state.value.permissionIntent
+        if (permissionIntent != null) {
+            resolvePermissionIntent(permissionIntent)
         }
     }
 
     private fun onPermissionStateUpdated(requestedPermissions: Set<String>, unapprovedPermissions: Set<PermissionMeta>) {
         permissionUtil.cacheRequestedPermissions(requestedPermissions)
         _state.update { it.copy(unapprovedPermissions = unapprovedPermissions) }
-        val pendingPermissionIntent = _state.value.pendingPermissionIntent
-        if (pendingPermissionIntent != null) {
-            resolvePendingPermissionIntent(pendingPermissionIntent)
+        val permissionIntent = _state.value.permissionIntent
+        if (permissionIntent != null) {
+            resolvePermissionIntent(permissionIntent)
         }
     }
 
     private fun onPermissionRequestCancelled() {
-        _state.update { it.copy(pendingPermissionIntent = null, permissionAction = null) }
+        _state.update { it.copy(permissionIntent = null, permissionAction = null) }
     }
 
-    private fun onPendingIntentConsumed() {
-        _state.update { it.copy(pendingPermissionIntent = null, permissionAction = null) }
+    private fun onPermissionIntentConsumed() {
+        _state.update { it.copy(permissionIntent = null, permissionAction = null) }
     }
 
-    private fun resolvePendingPermissionIntent(pendingPermissionIntent: PendingPermissionIntent) {
+    private fun resolvePermissionIntent(permissionIntent: PermissionIntent) {
         val unapprovedPermissions = _state.value.unapprovedPermissions
-        val permissionsToRequest = pendingPermissionIntent.requiredPermissions
+        val permissionsToRequest = permissionIntent.requiredPermissions
             .mapNotNull { requiredPermission -> unapprovedPermissions.firstOrNull { it.permission == requiredPermission } }
             .toSet()
         when {
             permissionsToRequest.isEmpty() -> {
                 _state.update {
-                    it.copy(permissionAction = PermissionAction.Proceed(emptySet(), state.value.pendingPermissionIntent))
+                    it.copy(permissionAction = PermissionAction.Proceed(emptySet(), state.value.permissionIntent))
                 }
             }
-
             permissionsToRequest.all { it.shouldShowRationale } -> {
                 _state.update {
                     it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, false))
                 }
             }
-
             permissionsToRequest.any { it.requiresSettings } -> {
                 _state.update {
                     it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, true))
                 }
             }
-
             else -> {
                 _state.update {
                     it.copy(permissionAction = PermissionAction.RequestPermission(permissionsToRequest))
@@ -95,12 +92,12 @@ class PermissionStateManager @Inject constructor(
     data class State(
         val permissionAction: PermissionAction? = null,
         val unapprovedPermissions: Set<PermissionMeta> = emptySet(),
-        val pendingPermissionIntent: PendingPermissionIntent? = null,
+        val permissionIntent: PermissionIntent? = null,
     )
 
     sealed class Event {
-        data object OnPermissionRequestCancelled : Event()
-        data object OnPendingIntentConsumed : Event()
+        data object PermissionRequestCancelled : Event()
+        data object PermissionIntentConsumed : Event()
         data class OnScreenStarted(val unapprovedPermissions: Set<PermissionMeta>) : Event()
         data class PermissionStateUpdated(
             val requestedPermissions: Set<String>,
@@ -108,10 +105,10 @@ class PermissionStateManager @Inject constructor(
         ) : Event()
     }
 
-    sealed class PendingPermissionIntent {
+    sealed class PermissionIntent {
         abstract val requiredPermissions: Set<String>
 
-        data class LaunchCameraScreen(override val requiredPermissions: Set<String>) : PendingPermissionIntent()
-        data class FetchMediaPhotos(override val requiredPermissions: Set<String>) : PendingPermissionIntent()
+        data class LaunchCameraScreen(override val requiredPermissions: Set<String>) : PermissionIntent()
+        data class FetchMediaPhotos(override val requiredPermissions: Set<String>) : PermissionIntent()
     }
 }

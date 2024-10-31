@@ -33,7 +33,7 @@ sealed class PermissionAction {
     abstract val permissionsToRequest: Set<PermissionMeta>
     data class RequestPermission(override val permissionsToRequest: Set<PermissionMeta>) : PermissionAction()
     data class ShowRationale(override val permissionsToRequest: Set<PermissionMeta>, val requiresSettings: Boolean) : PermissionAction()
-    data class Proceed(override val permissionsToRequest: Set<PermissionMeta>, val intent: PermissionStateManager.PendingPermissionIntent?) : PermissionAction()
+    data class Proceed(override val permissionsToRequest: Set<PermissionMeta>, val intent: PermissionStateManager.PermissionIntent?) : PermissionAction()
 }
 
 data class PermissionMeta(
