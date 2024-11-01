@@ -71,14 +71,14 @@ class PermissionStateManager @Inject constructor(
                     it.copy(permissionAction = PermissionAction.Proceed(emptySet(), state.value.permissionIntent))
                 }
             }
-            permissionsToRequest.any { it.shouldShowRationale } -> {
-                _state.update {
-                    it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, false))
-                }
-            }
             permissionsToRequest.any { it.requiresSettings } -> {
                 _state.update {
                     it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, true))
+                }
+            }
+            permissionsToRequest.any { it.shouldShowRationale } -> {
+                _state.update {
+                    it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, false))
                 }
             }
             else -> {
