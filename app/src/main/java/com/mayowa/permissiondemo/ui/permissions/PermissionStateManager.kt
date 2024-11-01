@@ -71,7 +71,7 @@ class PermissionStateManager @Inject constructor(
                     it.copy(permissionAction = PermissionAction.Proceed(emptySet(), state.value.permissionIntent))
                 }
             }
-            permissionsToRequest.all { it.shouldShowRationale } -> {
+            permissionsToRequest.any { it.shouldShowRationale } -> {
                 _state.update {
                     it.copy(permissionAction = PermissionAction.ShowRationale(permissionsToRequest, false))
                 }

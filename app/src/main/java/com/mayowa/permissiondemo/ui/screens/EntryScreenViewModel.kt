@@ -108,7 +108,7 @@ class EntryScreenViewModel @Inject constructor(
                 add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-        val CAMERA_PERMISSIONS = setOf(Manifest.permission.CAMERA)
+        val CAMERA_PERMISSIONS = setOf(Manifest.permission.CAMERA, Manifest.permission.ACCESS_MEDIA_LOCATION)
 
         val allPermissions = MEDIA_PERMISSIONS + CAMERA_PERMISSIONS
     }
